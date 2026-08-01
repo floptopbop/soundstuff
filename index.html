@@ -1,724 +1,1643 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ASCII Ocean – Dynamic Simulation Framework</title>
-    <style>
-        html, body {
-            margin: 0; padding: 0;
-            background: #04060a;
-            overflow: hidden;
-            width: 100vw; height: 100vh;
-            /* Uniform font rendering profile across distinct browser engines */
-            font-family: Consolas, "Lucida Console", "Courier New", Monaco, monospace;
-            font-weight: bold;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>AXIOM-OS // SIGNAL ANALYZER</title>
+<script>
+    if (location.search.indexOf('debug') > -1) { var e = document.createElement('script');
+        e.src = 'https://cdn.jsdelivr.net/npm/eruda';
+        e.onload = function() { eruda.init(); };
+        document.head.appendChild(e); }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --void: #060a14;
+        --panel: #0b1220;
+        --panel2: #0e1626;
+        --line: #1b2740;
+        --cream: #F3EEC3;
+        --green: #00dd66;
+        --dim: #4a5a7a;
+        --amber: #f5b52e;
+        --red: #ff4d4d;
+        --cyan: #00ccdd;
+        --violet: #a478e8;
+    }
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+    html,
+    body {
+        background: var(--void);
+        color: var(--cream);
+        font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+        font-size: 13px;
+        min-height: 100vh;
+        -webkit-text-size-adjust: 100%;
+        transition: background .4s ease;
+    }
+    #app {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 12px 12px 40px;
+    }
+    header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 2px 12px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 10px;
+    }
+    .sys-tag {
+        font-weight: 700;
+        letter-spacing: .14em;
+        font-size: 12px;
+        color: var(--cream);
+    }
+    .sys-tag .slash {
+        color: var(--dim);
+    }
+    .sys-status {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 10px;
+        color: var(--dim);
+        letter-spacing: .12em;
+        font-weight: 600;
+    }
+    .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #33405c;
+        transition: all .25s;
+    }
+    .dot.live {
+        background: var(--green);
+        box-shadow: 0 0 9px var(--green);
+    }
+    .dot.cal {
+        background: var(--amber);
+        box-shadow: 0 0 9px var(--amber);
+    }
+    .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 11px;
+        margin-bottom: 10px;
+    }
+    .lbl {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: .16em;
+        color: var(--dim);
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    #scope {
+        width: 100%;
+        height: 200px;
+        display: block;
+        border-radius: 3px;
+        background: #04070f;
+    }
+    #spectrum {
+        width: 100%;
+        height: 76px;
+        display: block;
+        border-radius: 3px;
+        background: #04070f;
+        margin-top: 4px;
+    }
+    .meter-wrap {
+        display: flex;
+        gap: 14px;
+        align-items: stretch;
+    }
+    .readout-main {
+        flex-shrink: 0;
+        min-width: 150px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .db-num {
+        font-size: 52px;
+        line-height: .92;
+        font-weight: 200;
+        letter-spacing: -.01em;
+        color: var(--cream);
+        font-variant-numeric: tabular-nums;
+    }
+    .db-unit {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--dim);
+        letter-spacing: .1em;
+        margin-top: 2px;
+    }
+    .meter-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        gap: 6px;
+        min-width: 0;
+    }
+    #meter {
+        width: 100%;
+        height: 84px;
+        display: block;
+        border-radius: 3px;
+        background: #04070f;
+    }
+    .subread {
+        display: flex;
+        gap: 10px;
+    }
+    .stat {
+        flex: 1;
+        background: var(--panel2);
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        padding: 6px 8px;
+        min-width: 0;
+    }
+    .stat .k {
+        font-size: 8px;
+        letter-spacing: .14em;
+        color: var(--dim);
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .stat .v {
+        font-size: 15px;
+        font-weight: 400;
+        color: var(--cream);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 2px;
+    }
+    .stat .v.green {
+        color: var(--green);
+    }
+    .stat .v.pending {
+        color: var(--dim);
+    }
+    .btnrow {
+        display: flex;
+        gap: 7px;
+        margin-bottom: 8px;
+    }
+    .btnrow:last-child {
+        margin-bottom: 0;
+    }
+    .btn {
+        flex: 1;
+        background: var(--panel2);
+        border: 1px solid var(--line);
+        color: var(--cream);
+        padding: 12px 8px;
+        border-radius: 4px;
+        font: inherit;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .15s, border-color .15s, opacity .15s;
+    }
+    .btn:active {
+        background: #16223a;
+    }
+    .btn:disabled {
+        opacity: .4;
+        cursor: default;
+    }
+    .btn.primary {
+        background: #0f2a1c;
+        border-color: #17492f;
+        color: var(--green);
+        font-weight: 700;
+    }
+    .btn.primary.on {
+        background: #2a0f14;
+        border-color: #5a1f27;
+        color: var(--red);
+    }
+    .btn.armed {
+        background: #2a230f;
+        border-color: #4a3d17;
+        color: var(--amber);
+    }
+    #log {
+        font-size: 9.5px;
+        color: var(--dim);
+        padding: 8px 2px 0;
+        border-top: 1px solid var(--line);
+        margin-top: 4px;
+        min-height: 16px;
+        letter-spacing: .03em;
+        line-height: 1.4;
+    }
+    #log b {
+        color: var(--green);
+        font-weight: 600;
+    }
+    #log .warn {
+        color: var(--amber);
+    }
+    .mode-row {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+    }
+    .mode-btn {
+        flex: 1;
+        min-width: 52px;
+        background: var(--panel2);
+        border: 1px solid var(--line);
+        color: var(--dim);
+        padding: 8px 3px;
+        border-radius: 3px;
+        font: inherit;
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .15s, border-color .15s, color .15s;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .mode-btn:active {
+        background: #16223a;
+    }
+    .mode-btn.active {
+        background: #0f1a2c;
+        border-color: #2a5080;
+        color: var(--cream);
+    }
+    .mode-btn.active.tuner-act {
+        border-color: var(--cyan);
+        color: var(--cyan);
+    }
+    .mode-btn.active.spec-act {
+        border-color: var(--green);
+        color: var(--green);
+    }
+    .mode-btn.active.scope-act {
+        border-color: var(--amber);
+        color: var(--amber);
+    }
+    .mode-btn.active.res-act {
+        border-color: var(--violet);
+        color: var(--violet);
+    }
+    .mode-btn.active.voice-act {
+        border-color: #ff88aa;
+        color: #ff88aa;
+    }
+    .mode-btn.active.imp-act {
+        border-color: var(--red);
+        color: var(--red);
+    }
+    #modeData {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+        min-height: 28px;
+        align-items: center;
+    }
+    #modeData .md-stat {
+        flex: 1;
+        min-width: 60px;
+        background: var(--panel2);
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        padding: 4px 7px;
+        text-align: center;
+    }
+    #modeData .md-k {
+        font-size: 7px;
+        letter-spacing: .14em;
+        color: var(--dim);
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    #modeData .md-v {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--cream);
+        font-variant-numeric: tabular-nums;
+        margin-top: 1px;
+    }
+    #modeData .md-v.big {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: .02em;
+    }
+    #modeData .md-v.highlight {
+        color: var(--cyan);
+    }
+    #modeData .md-v.warn {
+        color: var(--red);
+    }
+    .impulse-flash {
+        animation: impFlash .3s ease-out;
+    }
+    @keyframes impFlash {
+        0% {
+            box-shadow: 0 0 20px var(--red), 0 0 40px var(--red);
         }
-        canvas { 
-            display: block; 
-            width: 100%; 
-            height: 100%;
-            filter: brightness(2.0);
+        100% {
+            box-shadow: 0 0 0px transparent;
         }
-    </style>
+    }
+</style>
 </head>
 <body>
-    <canvas id="simulationCanvas"></canvas>
+    <div id="app">
+        <header>
+            <div class="sys-tag">AXIOM-OS <span class="slash">//</span> SIGNAL ANALYZER</div>
+            <div class="sys-status"><span class="dot" id="dot"></span><span id="stxt">OFFLINE</span></div>
+        </header>
+
+        <!-- MODE SELECTOR -->
+        <div class="mode-row" id="modeRow">
+            <button class="mode-btn active tuner-act" data-mode="tuner">TUNER</button>
+            <button class="mode-btn spec-act" data-mode="spectrum">SPECTRUM</button>
+            <button class="mode-btn scope-act" data-mode="oscilloscope">SCOPE</button>
+            <button class="mode-btn res-act" data-mode="resonance">RESONANCE</button>
+            <button class="mode-btn voice-act" data-mode="voice">VOICE</button>
+            <button class="mode-btn imp-act" data-mode="impulse">IMPULSE</button>
+        </div>
+
+        <!-- SCOPE -->
+        <div class="panel" id="scopePanel">
+            <div class="lbl" id="scopeLabel">Tuner &middot; note + cents + frequency</div>
+            <canvas id="scope"></canvas>
+            <div id="modeData"></div>
+            <div class="lbl" style="margin-top:9px;" id="specLabel">Spectrum &middot; log frequency</div>
+            <canvas id="spectrum"></canvas>
+        </div>
+
+        <!-- METER -->
+        <div class="panel">
+            <div class="lbl">Level &middot; dBFS &middot; floor-referenced</div>
+            <div class="meter-wrap">
+                <div class="readout-main">
+                    <div class="db-num" id="dbNum">&minus;&infin;</div>
+                    <div class="db-unit">dBFS RMS</div>
+                </div>
+                <div class="meter-col">
+                    <canvas id="meter"></canvas>
+                </div>
+            </div>
+            <div class="subread" style="margin-top:9px;">
+                <div class="stat"><div class="k">Peak hold</div><div class="v" id="stPeak">&minus;&infin;</div></div>
+                <div class="stat"><div class="k">Noise floor</div><div class="v pending" id="stFloor">not set</div></div>
+                <div class="stat"><div class="k">Above floor</div><div class="v pending" id="stAbove">&mdash;</div></div>
+            </div>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="panel">
+            <div class="btnrow">
+                <button class="btn primary" id="btnMic">&#9679; START MIC</button>
+                <button class="btn" id="btnCal" disabled>CALIBRATE FLOOR</button>
+            </div>
+            <div class="btnrow">
+                <button class="btn" id="btnPeak" disabled>RESET PEAK</button>
+                <button class="btn" id="btnFreeze" disabled>FREEZE</button>
+            </div>
+            <div id="log">Tap Start mic to begin. Sits quiet until you allow microphone access.</div>
+        </div>
+    </div>
+
     <script>
-        // Restrict document gesture overrides to protect canvas matrix metrics
-        document.addEventListener('gesturestart', e => e.preventDefault());
-        document.addEventListener('gesturechange', e => e.preventDefault());
-        document.addEventListener('gestureend', e => e.preventDefault());
-        document.addEventListener('touchmove', e => {
-            if (e.target === canvas || canvas.contains(e.target)) e.preventDefault();
-        }, { passive: false });
+        const $ = id => document.getElementById(id);
+        const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+        const lerp = (a, b, t) => a + (b - a) * t;
+        let DPR = Math.min(window.devicePixelRatio || 1, 2);
 
-        const canvas = document.getElementById("simulationCanvas");
-        const ctx = canvas.getContext("2d", { alpha: false });
+        // ---- meter / analysis constants -------------------------------------------
+        const FFT = 2048;
+        const SMOOTH = 0.8;
+        const DB_FLOOR = -90;
+        const METER_MIN = -72;
+        const METER_MAX = 0;
+        const PEAK_DECAY = 11;
+        const SPEC_BARS = 52;
+        const CAL_MS = 1500;
 
-        const CFG = {
-            fontSize: 6,
-            fontFamily: 'Consolas, "Lucida Console", "Courier New", Monaco, monospace',
-            shorelineRatio: 0.35,
-            pierXRatio: 0.84,
-            pierLengthRatio: 0.68,
+        // ---- state ----------------------------------------------------------------
+        let ctx = null,
+            stream = null,
+            source = null,
+            analyser = null;
+        let timeBuf = null,
+            freqBuf = null,
+            specBins = null;
+        let running = false,
+            frozen = false,
+            calibrating = false;
+        let calStart = 0,
+            calSamples = [];
+        let floorDb = null;
+        let peakHeldDb = DB_FLOOR;
+        let lastT = 0;
+        let dispHue = 150;
+
+        // mode
+        let mode = 'tuner';
+        const modeClasses = {
+            'tuner': 'tuner-act',
+            'spectrum': 'spec-act',
+            'oscilloscope': 'scope-act',
+            'resonance': 'res-act',
+            'voice': 'voice-act',
+            'impulse': 'imp-act'
         };
 
-        // Re-engineered Luminous Palettes for maximum glyph contrast
-        const PALETTE = {
-            night: {
-                bg: "#030509", drySand: "#7c6453", wetSand: "#4a4c40", water: "#006699",
-                ripple: "#00b4d8", foam: "#caf0f8", pier: "#5c4033", buoy: "#ff3333",
-                flotsam: "#99cc33", dog: "#ff9933", rain: "#4cc9f0", lightning: "#ffffff"
-            },
-            dawn: {
-                bg: "#1a1226", drySand: "#bc987e", wetSand: "#6b7061", water: "#0077b6",
-                ripple: "#48cae4", foam: "#ade8f4", pier: "#70483c", buoy: "#ff5500",
-                flotsam: "#aacc00", dog: "#f77f00", rain: "#90e0ef", lightning: "#fff1e0"
-            },
-            day: {
-                bg: "#0d1b2a", drySand: "#e9c46a", wetSand: "#9a8c73", water: "#0096c7",
-                ripple: "#00b4d8", foam: "#ffffff", pier: "#8b5a2b", buoy: "#ff4d00",
-                flotsam: "#52b788", dog: "#f4a261", rain: "#caf0f8", lightning: "#ffffff"
-            },
-            dusk: {
-                bg: "#1b1424", drySand: "#c77d55", wetSand: "#5c635a", water: "#03045e",
-                ripple: "#0077b6", foam: "#e0f2f1", pier: "#543327", buoy: "#ff3a00",
-                flotsam: "#70e000", dog: "#e76f51", rain: "#00b4d8", lightning: "#ffe6cc"
-            }
-        };
+        // tuner / voice state
+        let lastNoteName = '--';
+        let lastCents = 0;
+        let lastFreq = 0;
+        let pitchConfidence = 0;
 
-        let W, H, charW, charH, totalCells;
-        
-        // Flattened Allocation Buffers for unified CPU cache access
-        let current, previous, nextBuffer, foam, wetness, rainGrid;
-        let shoreContour;
-        const chars = "◯░∷▓∘oO";
+        // voice range tracking
+        let voiceMinPitch = Infinity;
+        let voiceMaxPitch = -Infinity;
+        let voicePitchHistory = []; // ring buffer for scrolling trace
 
-        let entities = [];
-        let rainParticles = [];
-        let lightningFlash = 0;
+        // resonance state
+        let resonancePeaks = [];
 
-        const WEATHER_PRESETS = {
-            CALM:    { turb: 0.03, wind: 0.02, rain: 0.0 },
-            BREEZE:  { turb: 0.10, wind: 0.45, rain: 0.0 },
-            DRIZZLE: { turb: 0.18, wind: 0.30, rain: 0.30 },
-            STORM:   { turb: 0.65, wind: 1.80, rain: 0.80 },
-        };
+        // impulse state
+        let rollingRms = -60;
+        let impulseCount = 0;
+        let lastImpulseTime = 0;
+        let impulseFlash = 0; // 0..1 decay
+        let recentImpulses = []; // last few impulse strengths
 
-        const ENV = {
-            turb: 0.03, wind: 0.02, rain: 0.0,
-            dayPhase: 0.5,
-            currentColors: {},
-            targetWeather: WEATHER_PRESETS.CALM,
-            weatherTimer: 10000,
-            weatherLabel: "CALM",
-        };
+        // canvases
+        let scopeCv, scopeCx, specCv, specCx, meterCv, meterCx;
 
-        // Calibrated Dog State Model
-        let dog = {
-            x: 10, y: 0,
-            vx: 0, vy: 0,
-            state: "WANDER", facing: "right",
-            target: null,
-            timer: 120, swimTicks: 0,
-            napTimer: 500,
-            speed: 0.10, // Normalized targeting acceleration rate
-            awakeOverride: false,
-        };
-        let napAnim = { bubbleActive: false, ticks: 0 };
-
-        function parseHex(hex) {
-            let num = parseInt(hex.slice(1), 16);
-            return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+        // ===========================================================================
+        // SIZING
+        // ===========================================================================
+        function sizeCanvas(cv) {
+            if (!cv) return;
+            const r = cv.getBoundingClientRect();
+            cv.width = Math.max(1, Math.round(r.width * DPR));
+            cv.height = Math.max(1, Math.round((r.height || 1) * DPR));
         }
 
-        function toHexStr(r, g, b) {
-            return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
-        }
+        function sizeAll() { [scopeCv, specCv, meterCv].forEach(sizeCanvas); }
 
-        function lerpPalettes(p1, p2, f) {
-            const out = {};
-            for (let key in p1) {
-                const c1 = parseHex(p1[key]);
-                const c2 = parseHex(p2[key]);
-                const r = c1.r + (c2.r - c1.r) * f;
-                const g = c1.g + (c2.g - c1.g) * f;
-                const b = c1.b + (c2.b - c1.b) * f;
-                out[key] = toHexStr(r, g, b);
-            }
-            return out;
-        }
-
-        function getNapSprite(facing) {
-            napAnim.ticks++;
-            if (napAnim.ticks % 40 === 0) napAnim.bubbleActive = !napAnim.bubbleActive;
-            let wobble = (napAnim.ticks % 80 < 40) ? 0 : 1;
-            const zLine = napAnim.bubbleActive
-                ? (wobble === 0 ? " z ◯" : "  z ∗")
-                : (wobble === 0 ? " z z" : "  z z");
-            return facing === "left" ? [zLine, "/▾▽=='"] : [zLine, "'==▽▾⧵"];
-        }
-
-        function getDogSprite(state, facing) {
-            switch(state) {
-                case "NAP":   return getNapSprite(facing);
-                case "SWIM":  return ["", facing === "right" ? "∽/(_)\\" : "/(_)\\∽"];
-                case "ALERT": return facing === "right" ? ["'==▽▾⧵ !", "' '"] : ["! /▾▽=='", "  ' '"];
-                default:      return facing === "right" ? ["'==▽▾⧵", "' '"] : ["/▾▽=='", "' '"];
+        // ===========================================================================
+        // AUDIO
+        // ===========================================================================
+        async function startMic() {
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) { log('This browser has no Web Audio support.', 'warn'); return; }
+                if (!ctx) ctx = new AC();
+                if (ctx.state !== 'running') { try { await ctx.resume(); } catch (e) {} }
+                const want = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } };
+                try { stream = await navigator.mediaDevices.getUserMedia(want); } catch (e) { stream =
+                        await navigator.mediaDevices.getUserMedia({ audio: true }); }
+                source = ctx.createMediaStreamSource(stream);
+                analyser = ctx.createAnalyser();
+                analyser.fftSize = FFT;
+                analyser.smoothingTimeConstant = SMOOTH;
+                source.connect(analyser);
+                const n = analyser.fftSize;
+                timeBuf = new Float32Array(n);
+                freqBuf = new Uint8Array(analyser.frequencyBinCount);
+                buildSpecBins();
+                running = true;
+                frozen = false;
+                voiceMinPitch = Infinity;
+                voiceMaxPitch = -Infinity;
+                voicePitchHistory = [];
+                impulseCount = 0;
+                rollingRms = -60;
+                recentImpulses = [];
+                impulseFlash = 0;
+                $('dot').className = 'dot live';
+                $('stxt').textContent = 'LISTENING';
+                $('btnMic').classList.add('on');
+                $('btnMic').innerHTML = '\u25A0 STOP MIC';
+                $('btnCal').disabled = false;
+                $('btnPeak').disabled = false;
+                $('btnFreeze').disabled = false;
+                log('<b>Live.</b> Mode: <b>' + mode.toUpperCase() +
+                    '</b>. Calibrate the floor in a quiet moment to reference every reading against the room.');
+            } catch (err) {
+                console.error(err);
+                const name = err && err.name;
+                if (name === 'NotAllowedError' || name === 'SecurityError') {
+                    log(
+                        'Microphone blocked. Allow mic access for this page, then tap Start again. (Mic needs an https:// or localhost address.)',
+                        'warn');
+                } else if (name === 'NotFoundError') { log('No microphone found on this device.', 'warn'); } else { log(
+                        'Could not open the mic: ' + (err && err.message || err), 'warn'); }
             }
         }
 
-        function resize() {
-            const tester = document.createElement("span");
-            tester.style.fontFamily = CFG.fontFamily;
-            tester.style.fontSize = `${CFG.fontSize}px`;
-            tester.style.lineHeight = "1em";
-            tester.style.position = "absolute";
-            tester.style.visibility = "hidden";
-            tester.textContent = "█";
-            document.body.appendChild(tester);
-            const rect = tester.getBoundingClientRect();
-            charW = rect.width;
-            charH = rect.height;
-            document.body.removeChild(tester);
-
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            W = Math.ceil(canvas.width / charW);
-            H = Math.ceil(canvas.height / charH);
-            totalCells = W * H;
-
-            current = new Float32Array(totalCells);
-            previous = new Float32Array(totalCells);
-            nextBuffer = new Float32Array(totalCells);
-            foam = new Float32Array(totalCells);
-            wetness = new Float32Array(totalCells);
-            rainGrid = new Uint8Array(totalCells);
-            shoreContour = new Int32Array(W);
-
-            const baseShore = Math.floor(H * CFG.shorelineRatio);
-            const s1 = Math.random() * 100, s2 = Math.random() * 100;
-
-            for (let x = 0; x < W; x++) {
-                shoreContour[x] = baseShore + Math.floor(Math.sin(x * 0.07 + s1) * 3.5 + Math.cos(x * 0.20 + s2) * 1.5);
-            }
-
-            entities = [
-                { x: Math.floor(W * 0.48), y: baseShore + 6, vx: 0, vy: 0, char: "◬", id: "buoy", carried: false }
-            ];
-            const items = ["~", "•", "♦", "⁕"];
-            for (let i = 0; i < 14; i++) {
-                entities.push({
-                    id: `flotsam_${i}`,
-                    x: Math.random() * (W - 8) + 4,
-                    y: Math.random() * (H - baseShore - 10) + baseShore + 8,
-                    vx: 0, vy: 0,
-                    char: items[Math.floor(Math.random() * items.length)],
-                    carried: false
-                });
-            }
-
-            dog.x = Math.floor(W * 0.3);
-            dog.y = shoreContour[Math.floor(dog.x)] - 4;
-            dog.state = "WANDER";
-            dog.timer = 100;
-            dog.napTimer = 600;
-            dog.target = null;
-            dog.awakeOverride = false;
-            rainParticles = [];
-
-            ctx.font = `bold ${CFG.fontSize}px ${CFG.fontFamily}`;
-            ctx.textBaseline = "top";
+        function stopMic() {
+            running = false;
+            frozen = false;
+            calibrating = false;
+            if (stream) { stream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
+                stream = null; }
+            if (source) { try { source.disconnect(); } catch (e) {} source = null; }
+            analyser = null;
+            peakHeldDb = DB_FLOOR;
+            lastNoteName = '--';
+            lastCents = 0;
+            lastFreq = 0;
+            pitchConfidence = 0;
+            voiceMinPitch = Infinity;
+            voiceMaxPitch = -Infinity;
+            voicePitchHistory = [];
+            resonancePeaks = [];
+            impulseCount = 0;
+            rollingRms = -60;
+            recentImpulses = [];
+            impulseFlash = 0;
+            $('dot').className = 'dot';
+            $('stxt').textContent = 'OFFLINE';
+            $('btnMic').classList.remove('on');
+            $('btnMic').innerHTML = '\u25CF START MIC';
+            $('btnCal').disabled = true;
+            $('btnCal').classList.remove('armed');
+            $('btnCal').textContent = 'CALIBRATE FLOOR';
+            $('btnPeak').disabled = true;
+            $('btnFreeze').disabled = true;
+            $('btnFreeze').classList.remove('armed');
+            $('btnFreeze').textContent = 'FREEZE';
+            updateReadouts(DB_FLOOR, DB_FLOOR);
+            updateModeData();
+            log('Mic stopped.');
         }
 
-        // Processing cycles locked entirely to static frame deltas
-        function updateWeatherAndTime(dt) {
-            ENV.dayPhase = (ENV.dayPhase + 0.00003 * dt) % 1.0;
-
-            ENV.weatherTimer -= dt;
-            if (ENV.weatherTimer <= 0) {
-                const keys = Object.keys(WEATHER_PRESETS);
-                const key = keys[Math.floor(Math.random() * keys.length)];
-                ENV.targetWeather = WEATHER_PRESETS[key];
-                ENV.weatherLabel = key;
-                ENV.weatherTimer = 20000 + Math.random() * 15000;
+        function buildSpecBins() {
+            const bins = analyser.frequencyBinCount;
+            const minBin = 1,
+                maxBin = bins - 1;
+            specBins = [];
+            for (let i = 0; i < SPEC_BARS; i++) {
+                const f0 = i / SPEC_BARS,
+                    f1 = (i + 1) / SPEC_BARS;
+                const lo = Math.round(minBin * Math.pow(maxBin / minBin, f0));
+                const hi = Math.max(lo + 1, Math.round(minBin * Math.pow(maxBin / minBin, f1)));
+                specBins.push([lo, hi]);
             }
-
-            const lerpFactor = 1 - Math.exp(-0.0002 * dt);
-            ENV.turb += (ENV.targetWeather.turb - ENV.turb) * lerpFactor;
-            ENV.wind += (ENV.targetWeather.wind - ENV.wind) * lerpFactor;
-            ENV.rain += (ENV.targetWeather.rain - ENV.rain) * lerpFactor;
-
-            const p = ENV.dayPhase * 4;
-            const idx = Math.floor(p);
-            const frac = p - idx;
-            const cycles = ["night", "dawn", "day", "dusk"];
-            ENV.currentColors = lerpPalettes(PALETTE[cycles[idx]], PALETTE[cycles[(idx + 1) % 4]], frac);
         }
 
-        function updateRain() {
-            rainGrid.fill(0);
+        // ===========================================================================
+        // METERING MATH
+        // ===========================================================================
+        function rmsDb(buf) {
+            let sum = 0;
+            for (let i = 0; i < buf.length; i++) { const s = buf[i];
+                sum += s * s; }
+            const rms = Math.sqrt(sum / buf.length);
+            return rms > 1e-7 ? 20 * Math.log10(rms) : DB_FLOOR;
+        }
 
-            if (lightningFlash > 0) lightningFlash--;
-            else if (ENV.turb > 0.50 && Math.random() < ENV.turb * 0.01) {
-                lightningFlash = Math.floor(Math.random() * 3) + 2;
+        function peakDb(buf) {
+            let mx = 0;
+            for (let i = 0; i < buf.length; i++) { const a = Math.abs(buf[i]); if (a > mx) mx = a; }
+            return mx > 1e-7 ? 20 * Math.log10(mx) : DB_FLOOR;
+        }
+        const meterPos = db => clamp((db - METER_MIN) / (METER_MAX - METER_MIN), 0, 1);
+
+        function heat(db) {
+            if (floorDb !== null) return clamp((db - floorDb) / 42, 0, 1);
+            return clamp((db - METER_MIN) / (METER_MAX - METER_MIN), 0, 1);
+        }
+        const fmtDb = db => (db <= DB_FLOOR + 0.5) ? '\u2212\u221E' : (db > 0 ? '+' : '\u2212') + Math.abs(db).toFixed(1);
+
+        // ===========================================================================
+        // NOTE / PITCH MATH
+        // ===========================================================================
+        const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+        function frequencyToNote(freq) {
+            if (freq <= 0) return { note: '--', octave: 0, cents: 0, name: '--', nearestFreq: 0 };
+            const midiNote = 69 + 12 * Math.log2(freq / 440);
+            const rounded = Math.round(midiNote);
+            const cents = Math.round((midiNote - rounded) * 100);
+            const octave = Math.floor(rounded / 12) - 1;
+            const noteIndex = ((rounded % 12) + 12) % 12;
+            const noteName = NOTE_NAMES[noteIndex] + octave;
+            const nearestFreq = 440 * Math.pow(2, (rounded - 69) / 12);
+            return { note: NOTE_NAMES[noteIndex], octave, cents, name: noteName, nearestFreq };
+        }
+
+        function detectPitch(buffer, sampleRate, minFreq, maxFreq) {
+            const n = buffer.length;
+            const minLag = Math.max(1, Math.floor(sampleRate / maxFreq));
+            const maxLag = Math.min(n - 1, Math.floor(sampleRate / minFreq));
+            if (minLag >= maxLag) return null;
+            let bestCorr = -Infinity;
+            let bestLag = minLag;
+            // compute zero-lag energy for normalization
+            let energy0 = 0;
+            for (let i = 0; i < n; i++) energy0 += buffer[i] * buffer[i];
+            if (energy0 < 1e-12) return null;
+            // search lags
+            const step = Math.max(1, Math.floor((maxLag - minLag) / 300));
+            for (let lag = minLag; lag <= maxLag; lag += step) {
+                let sum = 0;
+                const m = n - lag;
+                for (let i = 0; i < m; i++) sum += buffer[i] * buffer[i + lag];
+                // normalize by geometric mean of energies
+                let e1 = 0,
+                    e2 = 0;
+                for (let i = 0; i < m; i++) { e1 += buffer[i] * buffer[i];
+                    e2 += buffer[i + lag] * buffer[i + lag]; }
+                const denom = Math.sqrt(e1 * e2) + 1e-12;
+                const corr = sum / denom;
+                if (corr > bestCorr) { bestCorr = corr;
+                    bestLag = lag; }
             }
+            // refine around best lag
+            const fineStart = Math.max(minLag, bestLag - step);
+            const fineEnd = Math.min(maxLag, bestLag + step);
+            bestCorr = -Infinity;
+            for (let lag = fineStart; lag <= fineEnd; lag++) {
+                let sum = 0;
+                const m = n - lag;
+                for (let i = 0; i < m; i++) sum += buffer[i] * buffer[i + lag];
+                let e1 = 0,
+                    e2 = 0;
+                for (let i = 0; i < m; i++) { e1 += buffer[i] * buffer[i];
+                    e2 += buffer[i + lag] * buffer[i + lag]; }
+                const denom = Math.sqrt(e1 * e2) + 1e-12;
+                const corr = sum / denom;
+                if (corr > bestCorr) { bestCorr = corr;
+                    bestLag = lag; }
+            }
+            if (bestCorr < 0.4) return null; // low confidence
+            const freq = sampleRate / bestLag;
+            if (freq < minFreq || freq > maxFreq) return null;
+            return { frequency: freq, confidence: bestCorr, lag: bestLag };
+        }
 
-            if (ENV.rain > 0.05 && Math.random() < ENV.rain * 0.8) {
-                const count = Math.ceil(W * 0.03 * ENV.turb) || 1;
-                for (let k = 0; k < count; k++) {
-                    rainParticles.push({
-                        x: Math.random() * (W + 50) - 25,
-                        y: -2,
-                        targetY: Math.floor(Math.random() * (H - 2)),
-                        speed: (1.2 + ENV.turb * 1.8) * (0.8 + Math.random() * 0.3)
-                    });
+        // ===========================================================================
+        // PEAK DETECTION (for resonance mode)
+        // ===========================================================================
+        function findSpectralPeaks(freqData, sampleRate, fftSize, maxPeaks) {
+            const bins = freqData.length;
+            const peaks = [];
+            for (let i = 2; i < bins - 2; i++) {
+                const v = freqData[i];
+                if (v < 20) continue; // ignore very quiet bins
+                if (v > freqData[i - 1] && v > freqData[i - 2] && v > freqData[i + 1] && v > freqData[i + 2]) {
+                    const freq = i * sampleRate / fftSize;
+                    peaks.push({ bin: i, frequency: freq, magnitude: v });
                 }
             }
-
-            if (ENV.turb > 0.1) {
-                for (let x = 1; x < W - 1; x++) {
-                    const sY = shoreContour[x];
-                    if (Math.random() < (ENV.turb * 0.08)) {
-                        const tY = sY + Math.floor(Math.random() * (H - sY - 1));
-                        if (tY > sY && tY < H - 1) {
-                            current[tY * W + x] += (Math.random() - 0.5) * ENV.turb * 0.12;
-                        }
-                    }
+            peaks.sort((a, b) => b.magnitude - a.magnitude);
+            const filtered = [];
+            for (const p of peaks) {
+                let tooClose = false;
+                for (const f of filtered) {
+                    if (Math.abs(p.frequency - f.frequency) < Math.max(p.frequency * 0.05, 20)) { tooClose = true; break; }
                 }
+                if (!tooClose) filtered.push(p);
+                if (filtered.length >= maxPeaks) break;
             }
+            return filtered;
+        }
 
-            for (let i = rainParticles.length - 1; i >= 0; i--) {
-                let p = rainParticles[i];
-                p.x += ENV.wind * 0.6;
-                p.y += p.speed;
-                const ix = Math.floor(p.x);
-                const iy = Math.floor(p.y);
-                if (ix < 0 || ix >= W || iy >= H) { rainParticles.splice(i, 1); continue; }
+        function findHarmonics(peaks, tolerance) {
+            if (peaks.length < 2) return peaks.map(p => ({ ...p, harmonic: null, ratio: null }));
+            const fundamental = peaks[0].frequency;
+            return peaks.map(p => {
+                const ratio = p.frequency / fundamental;
+                const nearestInt = Math.round(ratio);
+                const isHarmonic = Math.abs(ratio - nearestInt) < tolerance;
+                return { ...p, harmonic: isHarmonic ? nearestInt : null, ratio: ratio };
+            });
+        }
 
-                if (iy >= p.targetY) {
-                    const idx = iy * W + ix;
-                    if (iy >= shoreContour[ix]) {
-                        if (iy < H - 1 && ix > 0 && ix < W - 1) {
-                            current[idx] += p.speed * 0.3;
-                            if (ENV.turb > 0.4 && Math.random() < 0.2) foam[idx] += p.speed * 0.2;
-                        }
-                    } else {
-                        wetness[idx] = 100;
-                    }
-                    rainParticles.splice(i, 1);
-                } else if (iy >= 0) {
-                    rainGrid[iy * W + ix] = 1;
-                }
+        // ===========================================================================
+        // TRANSIENT DETECTION (for impulse mode)
+        // ===========================================================================
+        function detectTransient(currentRmsDb, now) {
+            const TRANSIENT_THRESHOLD = 14; // dB above rolling average
+            const COOLDOWN_MS = 180; // min time between transients
+            if (rollingRms < -70) rollingRms = currentRmsDb; // initialize
+            const diff = currentRmsDb - rollingRms;
+            const isTransient = diff > TRANSIENT_THRESHOLD && (now - lastImpulseTime) > COOLDOWN_MS;
+            if (isTransient) {
+                impulseCount++;
+                lastImpulseTime = now;
+                impulseFlash = 1;
+                recentImpulses.push({ time: now, strength: diff });
+                if (recentImpulses.length > 20) recentImpulses.shift();
+            }
+            // update rolling average (slow)
+            rollingRms = lerp(rollingRms, currentRmsDb, 0.04);
+            return isTransient;
+        }
+
+        // ===========================================================================
+        // CALIBRATION
+        // ===========================================================================
+        function startCal() {
+            if (!running) return;
+            calibrating = true;
+            calStart = performance.now();
+            calSamples = [];
+            $('dot').className = 'dot cal';
+            $('stxt').textContent = 'CALIBRATING';
+            $('btnCal').classList.add('armed');
+            $('btnCal').textContent = 'SAMPLING\u2026';
+            $('btnMic').disabled = true;
+            log('Hold still and quiet — sampling the room for ' + (CAL_MS / 1000).toFixed(1) + 's\u2026');
+        }
+
+        function finishCal() {
+            calibrating = false;
+            $('btnMic').disabled = false;
+            $('btnCal').classList.remove('armed');
+            $('btnCal').textContent = 'RECALIBRATE';
+            $('dot').className = 'dot live';
+            $('stxt').textContent = 'LISTENING';
+            if (calSamples.length) {
+                calSamples.sort((a, b) => a - b);
+                floorDb = calSamples[Math.floor(calSamples.length / 2)];
+                $('stFloor').classList.remove('pending');
+                $('stFloor').textContent = fmtDb(floorDb) + ' dB';
+                log('<b>Floor set at ' + fmtDb(floorDb) +
+                    ' dBFS.</b> Above-floor now reads how far each sound rises over the room.');
+            } else { log('Calibration caught no samples — try again.', 'warn'); }
+        }
+
+        // ===========================================================================
+        // READOUTS
+        // ===========================================================================
+        function updateReadouts(rms, peak) {
+            $('dbNum').innerHTML = fmtDb(rms);
+            $('stPeak').innerHTML = fmtDb(peak);
+            if (floorDb !== null) {
+                const above = rms <= DB_FLOOR + 0.5 ? 0 : (rms - floorDb);
+                const el = $('stAbove');
+                el.classList.remove('pending');
+                el.classList.toggle('green', above > 3);
+                el.innerHTML = (above > 0 ? '+' : '') + above.toFixed(1) + ' dB';
             }
         }
 
-        function ripple() {
-            const pierX = Math.floor(W * CFG.pierXRatio);
-            const pierLen = Math.floor(H * CFG.pierLengthRatio);
-            const damping = 0.982 - ENV.turb * 0.015;
-
-            for (let y = 1; y < H - 1; y++) {
-                const yw = y * W;
-                const yAbove = (y - 1) * W;
-                const yBelow = (y + 1) * W;
-
-                for (let x = 1; x < W - 1; x++) {
-                    const idx = yw + x;
-                    const shoreY = shoreContour[x];
-                    const isSand = y < shoreY;
-
-                    if (x === pierX && y < pierLen && y % 3 === 0) {
-                        nextBuffer[idx] = 0;
-                        if (Math.abs(current[idx - 1]) > 4 || Math.abs(current[idx + 1]) > 4) {
-                            foam[idx] = Math.min(6, foam[idx] + 2);
-                        }
-                        continue;
+        function updateModeData() {
+            const md = $('modeData');
+            switch (mode) {
+                case 'tuner':
+                    md.innerHTML =
+                        '<div class="md-stat"><div class="md-k">Note</div><div class="md-v big highlight">' +
+                        lastNoteName + '</div></div>' +
+                        '<div class="md-stat"><div class="md-k">Cents</div><div class="md-v' + (Math.abs(lastCents) > 25 &&
+                            lastNoteName !== '--' ? ' warn' : '') + '">' + (lastNoteName === '--' ? '--' : (lastCents >= 0 ?
+                            '+' : '') + lastCents + ' ¢') + '</div></div>' +
+                        '<div class="md-stat"><div class="md-k">Frequency</div><div class="md-v">' + (lastFreq > 0 ? lastFreq
+                            .toFixed(1) + ' Hz' : '--') + '</div></div>' +
+                        '<div class="md-stat"><div class="md-k">Confidence</div><div class="md-v' + (pitchConfidence > 0.7 ?
+                            ' green' : '') + '">' + (pitchConfidence > 0 ? Math.round(pitchConfidence * 100) + '%' : '--') +
+                        '</div></div>';
+                    break;
+                case 'spectrum':
+                    const domFreq = resonancePeaks.length > 0 ? resonancePeaks[0].frequency.toFixed(1) : '--';
+                    md.innerHTML =
+                        '<div class="md-stat"><div class="md-k">Dominant freq</div><div class="md-v highlight">' + domFreq +
+                        (domFreq !== '--' ? ' Hz' : '') + '</div></div>' +
+                        '<div class="md-stat"><div class="md-k">Bandwidth</div><div class="md-v">' + (resonancePeaks.length >=
+                            3 ? (resonancePeaks[2].frequency - resonancePeaks[0].frequency).toFixed(0) + ' Hz' : '--') +
+                        '</div></div>' +
+                        '<div class="md-stat"><div class="md-k">Peaks found</div><div class="md-v">' + resonancePeaks
+                        .length + '</div></div>' +
+                        '<div class="md-stat"><div class="md-k">Spectral centroid</div><div class="md-v">' + (freqBuf ?
+                            calcSpectralCentroid().toFixed(0) + ' Hz' : '--') + '</div></div>';
+                    break;
+                case 'oscilloscope':
+                    const periodEst = lastFreq > 0 ? (1000 / lastFreq).toFixed(2) : '--';
+                    md.innerHTML =
+                        '<div class="md-stat"><div class="md-k">Est. frequency</div><div class="md-v">' + (lastFreq > 0 ?
+                            lastFreq.toFixed(1) + ' Hz' : '--') + '</div></div>' +
+                        '<div class="md-stat"><div class="md-k">Est. period</div><div class="md-v">' + (periodEst !== '--' ?
+                            periodEst + ' ms' : '--') + '</div></div>' +
+                        '<div class="md-stat"><div class="md-k">Samples</div><div class="md-v">' + (timeBuf ? timeBuf
+                            .length : '--') + '</div></div>' +
+                        '<div class="md-stat"><div class="md-k">Sample rate</div><div class="md-v">' + (ctx ? (ctx
+                            .sampleRate / 1000).toFixed(1) + ' kHz' : '--') + '</div></div>';
+                    break;
+                case 'resonance':
+                    let peakHTML = '';
+                    const annotated = findHarmonics(resonancePeaks, 0.08);
+                    for (let i = 0; i < Math.min(5, annotated.length); i++) {
+                        const p = annotated[i];
+                        const noteInfo = frequencyToNote(p.frequency);
+                        peakHTML += '<div class="md-stat"><div class="md-k">Peak ' + (i + 1) + (p.harmonic ? ' (H' + p
+                            .harmonic + ')' : '') + '</div><div class="md-v" style="font-size:11px;">' + p.frequency.toFixed(
+                                1) + ' Hz <span style="color:var(--dim);">' + noteInfo.name + '</span></div></div>';
                     }
-
-                    let div = 2.001;
-                    let localDamp = damping;
-                    if (isSand) {
-                        const d = shoreY - y;
-                        div = 2.0006 + d * 0.003;
-                        localDamp = Math.max(0.60, 0.70 - d * 0.08);
-                    }
-
-                    let total = current[yAbove + x] + current[yBelow + x] + current[idx - 1] + current[idx + 1];
-                    let val = (total / div - previous[idx]) * localDamp;
-                    
-                    const delta = Math.abs(val - current[idx]);
-                    if (delta > 0.35) foam[idx] += delta * 0.3;
-
-                    if (isSand) {
-                        if (val > 0.08) foam[idx] += 0.18;
-                        if (val > 0.02 || foam[idx] > 0.04) wetness[idx] = 100;
-                        wetness[idx] *= 0.92;
-                    }
-
-                    foam[idx] *= isSand ? 0.75 : 0.89;
-                    if (foam[idx] < 0.01) foam[idx] = 0;
-
-                    nextBuffer[idx] = Math.max(-35, Math.min(35, val));
-                }
+                    md.innerHTML = peakHTML || '<div class="md-stat"><div class="md-k">No peaks</div><div class="md-v">--</div></div>';
+                    break;
+                case 'voice':
+                    const rangeText = voiceMaxPitch > 0 && voiceMinPitch < Infinity ?
+                        frequencyToNote(voiceMinPitch).name + ' – ' + frequencyToNote(voiceMaxPitch).name :
+                        '--';
+                    const voiceType = estimateVoiceType(voiceMinPitch, voiceMaxPitch);
+                    md.innerHTML =
+                        '<div class="md-stat"><div class="md-k">Pitch</div><div class="md-v big highlight">' + lastNoteName +
+                        '</div></div>' +
+                        '<div class="md-stat"><div class="md-k">Range detected</div><div class="md-v" style="font-size:11px;">' +
+                        rangeText + '</div></div>' +
+                        '<div class="md-stat"><div class="md-k">Voice type</div><div class="md-v">' + voiceType +
+                        '</div></div>' +
+                        '<div class="md-stat"><div class="md-k">Confidence</div><div class="md-v' + (pitchConfidence > 0.7 ?
+                            ' green' : '') + '">' + (pitchConfidence > 0 ? Math.round(pitchConfidence * 100) + '%' : '--') +
+                        '</div></div>';
+                    break;
+                case 'impulse':
+                    const lastStr = recentImpulses.length > 0 ? recentImpulses[recentImpulses.length - 1].strength.toFixed(
+                        1) + ' dB' : '--';
+                    md.innerHTML =
+                        '<div class="md-stat"><div class="md-k">Transients</div><div class="md-v big highlight">' +
+                        impulseCount + '</div></div>' +
+                        '<div class="md-stat"><div class="md-k">Last strength</div><div class="md-v' + (impulseFlash > 0.5 ?
+                            ' warn' : '') + '">' + lastStr + '</div></div>' +
+                        '<div class="md-stat"><div class="md-k">Rolling floor</div><div class="md-v">' + fmtDb(rollingRms) +
+                        ' dB</div></div>' +
+                        '<div class="md-stat"><div class="md-k">Rate</div><div class="md-v">' + (recentImpulses.length >= 2 ?
+                            calcImpulseRate().toFixed(1) + '/s' : '--') + '</div></div>';
+                    break;
             }
-            
-            let temp = previous; previous = current; current = nextBuffer; nextBuffer = temp;
         }
 
-        function scanForFlotsam() {
-            if (dog.state === "NAP" || dog.state === "ALERT" || dog.state === "SWIM" || dog.state === "RETURN") return;
-            if (Math.random() > 0.03) return;
+        function calcSpectralCentroid() {
+            if (!freqBuf) return 0;
+            let sumWeighted = 0,
+                sumAmp = 0;
+            const bins = freqBuf.length;
+            const sr = ctx ? ctx.sampleRate : 44100;
+            for (let i = 0; i < bins; i++) {
+                const freq = i * sr / (FFT);
+                sumWeighted += freq * freqBuf[i];
+                sumAmp += freqBuf[i];
+            }
+            return sumAmp > 0 ? sumWeighted / sumAmp : 0;
+        }
 
-            for (let e of entities) {
-                if (e.id === "buoy" || e.carried) continue;
-                if (e.y > shoreContour[Math.floor(e.x)] + 5 && e.y < H - 4) {
-                    if (Math.abs(e.x - dog.x) < W * 0.45) {
-                        dog.target = e;
-                        dog.state = "ALERT";
-                        dog.timer = 100;
+        function estimateVoiceType(minPitch, maxPitch) {
+            if (minPitch >= Infinity || maxPitch <= 0) return '--';
+            const minNote = frequencyToNote(minPitch).name;
+            const maxNote = frequencyToNote(maxPitch).name;
+            const midiMin = 69 + 12 * Math.log2(minPitch / 440);
+            const midiMax = 69 + 12 * Math.log2(maxPitch / 440);
+            const range = midiMax - midiMin;
+            if (midiMax < 55) return 'Bass';
+            if (midiMax < 64) return 'Baritone';
+            if (midiMax < 70) return 'Tenor';
+            if (midiMax < 76) return 'Alto';
+            if (midiMax < 82) return 'Mezzo-Soprano';
+            return 'Soprano';
+        }
+
+        function calcImpulseRate() {
+            if (recentImpulses.length < 2) return 0;
+            const windowMs = 3000;
+            const now = performance.now();
+            let count = 0;
+            for (const imp of recentImpulses) {
+                if (now - imp.time < windowMs) count++;
+            }
+            return count / (windowMs / 1000);
+        }
+
+        // ===========================================================================
+        // RENDER
+        // ===========================================================================
+        function hueRGB(h, s, v) {
+            const c = v * s,
+                x = c * (1 - Math.abs((h / 60) % 2 - 1)),
+                m = v - c;
+            let r, g, b;
+            if (h < 60) { r = c;
+                g = x;
+                b = 0; } else if (h < 120) { r = x;
+                g = c;
+                b = 0; } else if (h < 180) { r = 0;
+                g = c;
+                b = x; } else if (h < 240) { r = 0;
+                g = x;
+                b = c; } else if (h < 300) { r = x;
+                g = 0;
+                b = c; } else { r = c;
+                g = 0;
+                b = x; }
+            return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+        }
+
+        function frame(now) {
+            requestAnimationFrame(frame);
+            const dt = lastT ? (now - lastT) / 1000 : 0;
+            lastT = now;
+            let rms = DB_FLOOR,
+                pk = DB_FLOOR;
+            if (running && analyser && !frozen) {
+                analyser.getFloatTimeDomainData(timeBuf);
+                analyser.getByteFrequencyData(freqBuf);
+                rms = rmsDb(timeBuf);
+                pk = peakDb(timeBuf);
+                peakHeldDb = Math.max(peakHeldDb - PEAK_DECAY * dt, pk);
+                if (peakHeldDb < DB_FLOOR) peakHeldDb = DB_FLOOR;
+                if (calibrating) {
+                    calSamples.push(rms);
+                    if (now - calStart >= CAL_MS) finishCal();
+                }
+                // mode-specific analysis
+                const sr = ctx ? ctx.sampleRate : 44100;
+                switch (mode) {
+                    case 'tuner':
+                        if (rms > -40) {
+                            const result = detectPitch(timeBuf, sr, 50, 2000);
+                            if (result && result.confidence > 0.5) {
+                                lastFreq = result.frequency;
+                                pitchConfidence = result.confidence;
+                                const noteInfo = frequencyToNote(result.frequency);
+                                lastNoteName = noteInfo.name;
+                                lastCents = noteInfo.cents;
+                            } else if (result && result.confidence > 0.35) {
+                                lastFreq = result.frequency;
+                                pitchConfidence = result.confidence;
+                                const noteInfo = frequencyToNote(result.frequency);
+                                lastNoteName = noteInfo.name;
+                                lastCents = noteInfo.cents;
+                            } else {
+                                pitchConfidence = result ? result.confidence : 0;
+                                if (pitchConfidence < 0.35) { lastNoteName = '--';
+                                    lastCents = 0;
+                                    lastFreq = 0; }
+                            }
+                        } else { lastNoteName = '--';
+                            lastCents = 0;
+                            lastFreq = 0;
+                            pitchConfidence = 0; }
                         break;
-                    }
-                }
-            }
-        }
-
-        function updateDogAI() {
-            const currentShoreY = shoreContour[Math.floor(dog.x)];
-
-            if (dog.napTimer > 0) dog.napTimer--;
-
-            if (dog.awakeOverride) {
-                dog.awakeOverride = false;
-                dog.state = "WANDER";
-                dog.timer = 120;
-                dog.napTimer = 500;
-                dog.vy = -0.5;
-            }
-
-            switch(dog.state) {
-                case "NAP":
-                    dog.vx *= 0.12; dog.vy *= 0.12;
-                    const targetSleepY = currentShoreY - 4;
-                    dog.y += (targetSleepY - dog.y) * 0.2;
-                    if (Math.abs(dog.y - targetSleepY) < 0.1) dog.y = targetSleepY;
-
-                    if (dog.napTimer <= 0) {
-                        dog.state = "SIT";
-                        dog.timer = 90;
-                    }
-                    break;
-
-                case "SIT":
-                    dog.vx *= 0.15; dog.vy *= 0.15;
-                    dog.y += ((currentShoreY - 3) - dog.y) * 0.12;
-                    dog.timer--;
-                    if (dog.timer <= 0) {
-                        if (Math.random() < 0.25 && dog.napTimer <= 0) {
-                            dog.state = "NAP";
-                            dog.napTimer = 400;
-                        } else {
-                            dog.state = "WANDER";
-                            dog.timer = 80 + Math.floor(Math.random() * 120);
-                            dog.vx = (Math.random() - 0.5) * 0.20; // Drastically lowered walking acceleration steps
+                    case 'spectrum':
+                        resonancePeaks = findSpectralPeaks(freqBuf, sr, FFT, 8);
+                        if (resonancePeaks.length > 0 && rms > -40) {
+                            lastFreq = resonancePeaks[0].frequency;
+                            lastNoteName = frequencyToNote(lastFreq).name;
                         }
-                    }
-                    scanForFlotsam();
-                    break;
-
-                case "WANDER":
-                    dog.x += dog.vx;
-                    dog.facing = dog.vx >= 0 ? "right" : "left";
-                    let targetWanderY = currentShoreY - 3.5 + Math.sin(dog.x * 0.3) * 1.0;
-                    dog.y += (targetWanderY - dog.y) * 0.12;
-                    
-                    if (dog.x < 4 || dog.x > W - 10) dog.vx *= -1;
-                    
-                    dog.timer--;
-                    if (dog.timer <= 0) {
-                        dog.state = "SIT";
-                        dog.timer = 50 + Math.floor(Math.random() * 50);
-                    }
-                    scanForFlotsam();
-                    break;
-
-                case "ALERT":
-                    if (!dog.target || dog.target.carried || dog.target.y <= shoreContour[Math.floor(dog.target.x)]) {
-                        dog.state = "SIT"; dog.timer = 40; dog.target = null; break;
-                    }
-                    let dxA = dog.target.x - dog.x;
-                    dog.facing = dxA >= 0 ? "right" : "left";
-                    if (Math.abs(dxA) > 1.2) dog.x += Math.sign(dxA) * dog.speed * 1.1;
-                    dog.y += ((currentShoreY - 1.5) - dog.y) * 0.2;
-
-                    if (dog.timer % 25 === 0 && dog.timer > 0) {
-                        let bx = Math.floor(dog.x + (dog.facing === "right" ? 5 : -1));
-                        let by = Math.floor(currentShoreY + 1);
-                        if (by < H && bx > 0 && bx < W) {
-                            current[by * W + bx] = 5.0; 
-                            foam[by * W + bx] = 3.0;
+                        break;
+                    case 'oscilloscope':
+                        if (rms > -40) {
+                            const result = detectPitch(timeBuf, sr, 40, 3000);
+                            if (result && result.confidence > 0.4) {
+                                lastFreq = result.frequency;
+                                pitchConfidence = result.confidence;
+                                lastNoteName = frequencyToNote(result.frequency).name;
+                            } else if (rms < -35) { lastFreq = 0;
+                                lastNoteName = '--'; }
                         }
-                    }
-                    dog.timer--;
-                    if (dog.timer <= 0) { 
-                        dog.state = "SWIM"; 
-                        dog.swimTicks = 0; 
-                    }
-                    break;
-
-                case "SWIM":
-                    dog.swimTicks++;
-                    if (!dog.target || dog.target.carried || dog.swimTicks > 500) { 
-                        dog.state = "RETURN"; 
-                        break; 
-                    }
-                    let dxS = dog.target.x - dog.x;
-                    let dyS = dog.target.y - dog.y;
-                    let distS = Math.sqrt(dxS * dxS + dyS * dyS);
-                    dog.facing = dxS >= 0 ? "right" : "left";
-
-                    if (distS < 1.5) { 
-                        dog.state = "RETURN"; 
-                        dog.target.carried = true; 
-                    } else {
-                        // Clamped swimming vectors to make dog fighting currents realistic
-                        dog.vx += (dxS / distS) * dog.speed * 0.12;
-                        dog.vy += (dyS / distS) * dog.speed * 0.12;
-                    }
-                    applyWaterPhysics(dog);
-                    break;
-
-                case "RETURN":
-                    let homeX = dog.target ? dog.target.x : W * 0.3;
-                    let dxR = homeX - dog.x;
-                    dog.facing = dxR >= 0 ? "right" : "left";
-
-                    if (dog.y <= shoreContour[Math.floor(dog.x)] - 2.5) {
-                        if (dog.target && dog.target.carried) {
-                            dog.target.carried = false;
-                            dog.target.y = shoreContour[Math.floor(dog.target.x)] - 1;
-                            dog.target.vx = 0; dog.target.vy = 0;
+                        break;
+                    case 'resonance':
+                        resonancePeaks = findSpectralPeaks(freqBuf, sr, FFT, 8);
+                        if (resonancePeaks.length > 0) {
+                            lastFreq = resonancePeaks[0].frequency;
+                            lastNoteName = frequencyToNote(lastFreq).name;
                         }
-                        dog.target = null;
-                        dog.state = "SIT";
-                        dog.timer = 100;
-                        dog.napTimer = 250;
-                    } else {
-                        dog.vy -= dog.speed * 0.15;
-                        dog.vx += (homeX - dog.x) * 0.015;
-                    }
-                    applyWaterPhysics(dog);
+                        break;
+                    case 'voice':
+                        if (rms > -40) {
+                            const result = detectPitch(timeBuf, sr, 75, 1200);
+                            if (result && result.confidence > 0.5) {
+                                lastFreq = result.frequency;
+                                pitchConfidence = result.confidence;
+                                const noteInfo = frequencyToNote(result.frequency);
+                                lastNoteName = noteInfo.name;
+                                lastCents = noteInfo.cents;
+                                if (result.frequency > 75 && result.frequency < 1200) {
+                                    voiceMinPitch = Math.min(voiceMinPitch, result.frequency);
+                                    voiceMaxPitch = Math.max(voiceMaxPitch, result.frequency);
+                                    voicePitchHistory.push({ time: now, freq: result.frequency });
+                                    while (voicePitchHistory.length > 0 && now - voicePitchHistory[0].time >
+                                        8000) voicePitchHistory.shift();
+                                }
+                            } else if (result && result.confidence > 0.35) {
+                                lastFreq = result.frequency;
+                                pitchConfidence = result.confidence;
+                                const noteInfo = frequencyToNote(result.frequency);
+                                lastNoteName = noteInfo.name;
+                                lastCents = noteInfo.cents;
+                            } else { pitchConfidence = result ? result.confidence : 0; if (pitchConfidence < 0.35) {
+                                    lastNoteName = '--';
+                                    lastCents = 0;
+                                    lastFreq = 0; } }
+                        } else { lastNoteName = '--';
+                            lastCents = 0;
+                            lastFreq = 0;
+                            pitchConfidence = 0; }
+                        break;
+                    case 'impulse':
+                        detectTransient(rms, now);
+                        if (impulseFlash > 0) impulseFlash = Math.max(0, impulseFlash - dt * 3.5);
+                        break;
+                }
+                updateReadouts(rms, peakHeldDb);
+                updateModeData();
+            }
+            // eased color
+            const tgtHue = lerp(150, 0, heat(rms));
+            dispHue = lerp(dispHue, tgtHue, 0.15);
+            const [R, G, B] = hueRGB(dispHue, 0.9, 1);
+            const col = 'rgb(' + R + ',' + G + ',' + B + ')';
+            document.body.style.background = 'rgb(' + ((R * 0.03 + 6) | 0) + ',' + ((G * 0.03 + 8) | 0) + ',' + ((B * 0.03 +
+                16) | 0) + ')';
+            // impulse flash on panel
+            if (impulseFlash > 0.5 && mode === 'impulse') {
+                $('scopePanel').style.boxShadow = '0 0 ' + (impulseFlash * 25) + 'px rgba(255,77,77,' + impulseFlash
+                    .toFixed(2) + ')';
+            } else { $('scopePanel').style.boxShadow = ''; }
+            drawScope(R, G, B, col);
+            drawSpectrum(R, G, B);
+            drawMeter(R, G, B, rms);
+        }
 
-                    if (dog.target && dog.target.carried) {
-                        dog.target.x = dog.x + (dog.facing === "left" ? -1 : 4);
-                        dog.target.y = dog.y + 0.4;
-                    }
+        function drawScope(R, G, B, col) {
+            if (!scopeCx) return;
+            switch (mode) {
+                case 'oscilloscope':
+                    drawScopeOscilloscope(R, G, B, col);
                     break;
-            }
-
-            dog.x = Math.max(2, Math.min(W - 9, dog.x));
-            dog.y = Math.max(1, Math.min(H - 3, dog.y));
-
-            if (dog.y > currentShoreY) {
-                let ix = Math.floor(dog.x + 2), iy = Math.floor(dog.y + 1);
-                if (iy < H && ix < W) foam[iy * W + ix] = Math.min(5, foam[iy * W + ix] + 0.3);
-            }
-        }
-
-        function applyWaterPhysics(obj) {
-            let ix = Math.max(1, Math.min(W - 2, Math.floor(obj.x)));
-            let iy = Math.max(1, Math.min(H - 2, Math.floor(obj.y)));
-            
-            const idx = iy * W + ix;
-            const slopeX = current[idx + 1] - current[idx - 1];
-            const slopeY = current[idx + W] - current[idx - W];
-
-            obj.vx -= slopeX * 0.20; 
-            obj.vy -= slopeY * 0.20;
-            obj.vy += 0.003; 
-            
-            // Raised linear friction constraints to prevent drifting out of control
-            obj.vx *= 0.78; obj.vy *= 0.78;
-            obj.x += obj.vx; obj.y += obj.vy;
-        }
-
-        function updateEntities() {
-            for (let e of entities) {
-                if (e.carried) continue;
-                applyWaterPhysics(e);
-
-                if (e.x <= 2) { e.x = 3; e.vx *= -0.3; }
-                if (e.x >= W - 3) { e.x = W - 4; e.vx *= -0.3; }
-                if (e.y >= H - 2) { e.y = H - 3; e.vy *= -0.3; }
-
-                const sY = shoreContour[Math.floor(e.x)] || Math.floor(H * CFG.shorelineRatio);
-                if (e.y <= sY) {
-                    e.y = sY; e.vy *= -0.1; e.vx *= 0.3;
-                }
-                
-                let ix = Math.max(1, Math.min(W - 2, Math.floor(e.x)));
-                let iy = Math.max(1, Math.min(H - 2, Math.floor(e.y)));
-                if (Math.abs(e.vx) + Math.abs(e.vy) > 0.08 && iy > sY) {
-                    foam[iy * W + ix] += 0.25;
-                }
+                case 'tuner':
+                    drawScopeTuner(R, G, B);
+                    break;
+                case 'spectrum':
+                    drawScopeBigSpectrum(R, G, B);
+                    break;
+                case 'resonance':
+                    drawScopeResonance(R, G, B);
+                    break;
+                case 'voice':
+                    drawScopeVoice(R, G, B, col);
+                    break;
+                case 'impulse':
+                    drawScopeImpulse(R, G, B, col);
+                    break;
+                default:
+                    drawScopeOscilloscope(R, G, B, col);
             }
         }
 
-        function drawHUD() {
-            const c = ENV.currentColors;
-            const flash = lightningFlash > 0;
-            ctx.fillStyle = "rgba(2, 3, 5, 0.9)";
-            ctx.fillRect(0, 0, charW * 44, charH * 2.2);
-
-            let arrow = "→";
-            if (ENV.wind < -0.2) arrow = "←";
-            if (Math.abs(ENV.wind) < 0.1) arrow = "·";
-
-            const txt = ` CONSOLE: ${ENV.weatherLabel} | Wind ${arrow} ${Math.abs(ENV.wind).toFixed(1)} | Diurnal ${(ENV.dayPhase * 100).toFixed(0)}%`;
-            ctx.fillStyle = flash ? c.lightning : c.foam;
-            ctx.fillText(txt, charW * 0.5, charH * 0.4);
+        function drawScopeOscilloscope(R, G, B, col) {
+            const w = scopeCv.width,
+                h = scopeCv.height;
+            scopeCx.fillStyle = frozen ? 'rgba(4,7,15,1)' : 'rgba(4,7,15,0.32)';
+            scopeCx.fillRect(0, 0, w, h);
+            scopeCx.strokeStyle = 'rgba(27,39,64,0.9)';
+            scopeCx.lineWidth = 1;
+            scopeCx.beginPath();
+            scopeCx.moveTo(0, h / 2);
+            scopeCx.lineTo(w, h / 2);
+            scopeCx.stroke();
+            scopeCx.strokeStyle = 'rgba(27,39,64,0.5)';
+            for (let i = 1; i < 4; i++) { const y = h * i / 4;
+                scopeCx.beginPath();
+                scopeCx.moveTo(0, y);
+                scopeCx.lineTo(w, y);
+                scopeCx.stroke(); }
+            scopeCx.lineWidth = 2 * DPR;
+            scopeCx.strokeStyle = col;
+            scopeCx.shadowBlur = 12 * DPR;
+            scopeCx.shadowColor = col;
+            scopeCx.beginPath();
+            if (running && timeBuf) {
+                const N = timeBuf.length,
+                    step = Math.max(1, (N / w) | 0);
+                let x = 0;
+                for (let i = 0; i < N; i += step) {
+                    const y = h / 2 - timeBuf[i] * h * 0.46;
+                    x === 0 ? scopeCx.moveTo(0, y) : scopeCx.lineTo(x, y);
+                    x = i / (N - 1) * w;
+                }
+            } else { scopeCx.moveTo(0, h / 2);
+                scopeCx.lineTo(w, h / 2); }
+            scopeCx.stroke();
+            scopeCx.shadowBlur = 0;
         }
 
-        function render() {
-            const c = ENV.currentColors;
-            const flash = lightningFlash > 0;
-            ctx.fillStyle = flash ? c.lightning : c.bg;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            const pierX = Math.floor(W * CFG.pierXRatio);
-            const pierLen = Math.floor(H * CFG.pierLengthRatio);
-            
-            let rainChar = "│";
-            if (ENV.wind < -0.4) rainChar = "╱";
-            if (ENV.wind > 0.4) rainChar = "╲";
-
-            for (let y = 0; y < H; y++) {
-                const yw = y * W;
-                let runStr = "", runCol = "", runStartX = 0;
-
-                for (let x = 0; x < W; x++) {
-                    const idx = yw + x;
-                    const shoreY = shoreContour[x];
-                    const isSand = y < shoreY;
-                    let char = "∷", col = c.water;
-
-                    if (x === pierX && y < pierLen && y % 3 === 0) {
-                        char = "⊗"; col = c.pier;
-                    } else {
-                        const v = current[idx];
-                        const f = foam[idx];
-                        const w = wetness[idx];
-                        
-                        const norm = Math.max(-1, Math.min(1, v / 2.2));
-                        let charIdx = Math.floor(Math.pow(Math.abs(norm), 0.6) * (chars.length - 1));
-                        charIdx = Math.max(0, Math.min(charIdx, chars.length - 1));
-                        char = chars[charIdx];
-
-                        if (isSand) {
-                            if (f > 0.9 || v > 0.4) { col = c.foam; char = "◌"; }
-                            else if (v > 0.05 || f > 0.22) { col = c.foam; char = "·"; }
-                            else if (w > 0.05) { col = c.wetSand; char = "▓"; }
-                            else { col = c.drySand; char = "░"; }
-                        } else {
-                            if (f > 1.6) { col = c.foam; char = "░"; }
-                            else if (f > 0.7) { col = c.foam; char = "*"; }
-                            else if (f > 0.22) { col = c.ripple; char = "°"; }
-                            else if (v > 0.12 || v < -0.12) { col = c.ripple; }
-                            else { col = c.water; if (charIdx === 2) char = "∙"; }
-                        }
-                    }
-
-                    if (rainGrid[idx] === 1) { char = rainChar; col = c.rain; }
-
-                    if (x === 0) {
-                        runCol = col; runStr = char; runStartX = 0;
-                    } else if (col === runCol) {
-                        runStr += char;
-                    } else {
-                        ctx.fillStyle = flash ? c.lightning : runCol;
-                        ctx.fillText(runStr, runStartX * charW, y * charH);
-                        runCol = col; runStr = char; runStartX = x;
-                    }
-                }
-                if (runStr.length > 0) {
-                    ctx.fillStyle = flash ? c.lightning : runCol;
-                    ctx.fillText(runStr, runStartX * charW, y * charH);
+        function drawScopeTuner(R, G, B) {
+            const w = scopeCv.width,
+                h = scopeCv.height;
+            scopeCx.fillStyle = '#04070f';
+            scopeCx.fillRect(0, 0, w, h);
+            const cx = w / 2,
+                cy = h * 0.38;
+            // large note name
+            scopeCx.fillStyle = lastNoteName !== '--' ? 'rgb(' + R + ',' + G + ',' + B + ')' : 'rgba(74,90,122,0.6)';
+            scopeCx.font = 'bold ' + (56 * DPR) + 'px "IBM Plex Mono", monospace';
+            scopeCx.textAlign = 'center';
+            scopeCx.textBaseline = 'middle';
+            scopeCx.fillText(lastNoteName === '--' ? '--' : lastNoteName, cx, cy);
+            // frequency below
+            scopeCx.fillStyle = 'rgba(74,90,122,0.9)';
+            scopeCx.font = (13 * DPR) + 'px "IBM Plex Mono", monospace';
+            scopeCx.fillText(lastFreq > 0 ? lastFreq.toFixed(1) + ' Hz' : 'waiting for signal\u2026', cx, cy + 42 * DPR);
+            // cents bar
+            const barY = h * 0.72,
+                barW = w * 0.7,
+                barH = 16 * DPR;
+            const barX = cx - barW / 2;
+            scopeCx.fillStyle = 'rgba(27,39,64,0.6)';
+            scopeCx.fillRect(barX, barY, barW, barH);
+            // center line
+            scopeCx.strokeStyle = 'rgba(243,238,195,0.7)';
+            scopeCx.lineWidth = 1.5 * DPR;
+            scopeCx.beginPath();
+            scopeCx.moveTo(cx, barY - 6 * DPR);
+            scopeCx.lineTo(cx, barY + barH + 6 * DPR);
+            scopeCx.stroke();
+            // tick marks
+            for (let c = -40; c <= 40; c += 10) {
+                const tx = cx + (c / 50) * barW / 2;
+                scopeCx.strokeStyle = c === 0 ? 'rgba(243,238,195,0.8)' : 'rgba(74,90,122,0.5)';
+                scopeCx.lineWidth = c === 0 ? 1.5 * DPR : 0.8 * DPR;
+                scopeCx.beginPath();
+                scopeCx.moveTo(tx, barY - 3 * DPR);
+                scopeCx.lineTo(tx, barY + barH + 3 * DPR);
+                scopeCx.stroke();
+                if (c % 20 === 0) {
+                    scopeCx.fillStyle = 'rgba(74,90,122,0.7)';
+                    scopeCx.font = (8 * DPR) + 'px "IBM Plex Mono", monospace';
+                    scopeCx.textAlign = 'center';
+                    scopeCx.fillText((c >= 0 ? '+' : '') + c, tx, barY + barH + 14 * DPR);
                 }
             }
-
-            for (let e of entities) {
-                ctx.fillStyle = flash ? c.lightning : (e.id === "buoy" ? c.buoy : c.flotsam);
-                ctx.fillText(e.char, Math.floor(e.x) * charW, Math.floor(e.y) * charH);
+            // needle
+            if (lastNoteName !== '--') {
+                const needleX = cx + (lastCents / 50) * barW / 2;
+                const nclamped = clamp(needleX, barX, barX + barW);
+                scopeCx.fillStyle = 'rgb(' + R + ',' + G + ',' + B + ')';
+                scopeCx.beginPath();
+                scopeCx.moveTo(nclamped, barY - 4 * DPR);
+                scopeCx.lineTo(nclamped - 5 * DPR, barY - 12 * DPR);
+                scopeCx.lineTo(nclamped + 5 * DPR, barY - 12 * DPR);
+                scopeCx.closePath();
+                scopeCx.fill();
+                scopeCx.fillRect(nclamped - 1.5 * DPR, barY - 2 * DPR, 3 * DPR, barH + 4 * DPR);
             }
-
-            const dogSprite = getDogSprite(dog.state, dog.facing);
-            ctx.fillStyle = c.dog;
-            for (let r = 0; r < dogSprite.length; r++) {
-                ctx.fillText(dogSprite[r], Math.floor(dog.x) * charW, Math.floor(dog.y + r) * charH);
-            }
-
-            drawHUD();
+            // cents readout
+            scopeCx.fillStyle = 'rgba(243,238,195,0.9)';
+            scopeCx.font = 'bold ' + (11 * DPR) + 'px "IBM Plex Mono", monospace';
+            scopeCx.textAlign = 'center';
+            const centsText = lastNoteName !== '--' ? (lastCents >= 0 ? '+' : '') + lastCents + ' ¢' : '';
+            scopeCx.fillText(centsText, cx, barY + barH + 28 * DPR);
+            scopeCx.textAlign = 'start';
         }
 
-        function interact(cx, cy) {
-            const rad = 2;
-            for (let y = -rad; y <= rad; y++) {
-                const py = cy + y;
-                if (py <= 0 || py >= H - 1) continue;
-                for (let x = -rad; x <= rad; x++) {
-                    const px = cx + x;
-                    if (px > 0 && px < W - 1) {
-                        current[py * W + px] = 3.5;
-                        foam[py * W + px] = 2.0;
-                    }
-                }
+        function drawScopeBigSpectrum(R, G, B) {
+            const w = scopeCv.width,
+                h = scopeCv.height;
+            scopeCx.fillStyle = '#04070f';
+            scopeCx.fillRect(0, 0, w, h);
+            if (!(running && freqBuf && specBins)) return;
+            const bw = w / SPEC_BARS;
+            for (let i = 0; i < SPEC_BARS; i++) {
+                const [lo, hi] = specBins[i];
+                let sum = 0;
+                for (let b = lo; b < hi; b++) sum += freqBuf[b];
+                const mag = (sum / (hi - lo)) / 255;
+                const bh = mag * h;
+                scopeCx.fillStyle = 'rgba(' + R + ',' + G + ',' + B + ',' + (0.28 + mag * 0.72).toFixed(3) + ')';
+                scopeCx.fillRect(i * bw, h - bh, bw * 0.85, bh);
             }
-
-            const dX = dog.x + 2 - cx;
-            const dY = dog.y - cy;
-            if (Math.sqrt(dX * dX + dY * dY) < 5.0) {
-                if (dog.state === "NAP") dog.awakeOverride = true;
-            }
-
-            for (let e of entities) {
-                const dx = e.x - cx;
-                const dy = e.y - cy;
-                const d = Math.sqrt(dx * dx + dy * dy);
-                if (d < 6) {
-                    e.vx += (dx / d) * 10.0;
-                    e.vy += (dy / d) * 10.0;
+            // frequency axis labels
+            scopeCx.fillStyle = 'rgba(74,90,122,0.8)';
+            scopeCx.font = (8 * DPR) + 'px "IBM Plex Mono", monospace';
+            scopeCx.textBaseline = 'top';
+            const sr = ctx ? ctx.sampleRate : 44100;
+            const labels = [50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+            for (const lf of labels) {
+                const binFrac = Math.log2(lf / 20) / Math.log2(sr / 2 / 20);
+                if (binFrac >= 0 && binFrac <= 1) {
+                    const lx = binFrac * w;
+                    scopeCx.fillText(lf >= 1000 ? (lf / 1000).toFixed(0) + 'k' : lf + '', lx + 3 * DPR, 2 * DPR);
+                    scopeCx.strokeStyle = 'rgba(27,39,64,0.4)';
+                    scopeCx.lineWidth = 0.5 * DPR;
+                    scopeCx.beginPath();
+                    scopeCx.moveTo(lx, 0);
+                    scopeCx.lineTo(lx, h);
+                    scopeCx.stroke();
                 }
             }
         }
 
-        function getGridCoords(e) {
-            const cX = e.clientX || (e.touches && e.touches[0].clientX);
-            const cY = e.clientY || (e.touches && e.touches[0].clientY);
-            return { x: Math.floor(cX / charW), y: Math.floor(cY / charH) };
+        function drawScopeResonance(R, G, B) {
+            const w = scopeCv.width,
+                h = scopeCv.height;
+            scopeCx.fillStyle = '#04070f';
+            scopeCx.fillRect(0, 0, w, h);
+            if (!(running && freqBuf && specBins)) return;
+            const bw = w / SPEC_BARS;
+            for (let i = 0; i < SPEC_BARS; i++) {
+                const [lo, hi] = specBins[i];
+                let sum = 0;
+                for (let b = lo; b < hi; b++) sum += freqBuf[b];
+                const mag = (sum / (hi - lo)) / 255;
+                const bh = mag * h;
+                scopeCx.fillStyle = 'rgba(' + R + ',' + G + ',' + B + ',' + (0.22 + mag * 0.78).toFixed(3) + ')';
+                scopeCx.fillRect(i * bw, h - bh, bw * 0.85, bh);
+            }
+            // mark peaks
+            const annotated = findHarmonics(resonancePeaks, 0.08);
+            const sr = ctx ? ctx.sampleRate : 44100;
+            const maxBin = freqBuf.length - 1;
+            const colors = ['rgba(164,120,232,0.95)', 'rgba(0,204,221,0.9)', 'rgba(0,221,102,0.85)', 'rgba(245,181,46,0.8)',
+                'rgba(255,77,77,0.75)', 'rgba(255,136,170,0.7)'
+            ];
+            for (let i = 0; i < Math.min(6, annotated.length); i++) {
+                const p = annotated[i];
+                const binFrac = Math.log2(p.frequency / 20) / Math.log2(sr / 2 / 20);
+                const px = clamp(binFrac * w, 4, w - 4);
+                const py = h - (p.magnitude / 255) * h;
+                scopeCx.fillStyle = colors[i] || 'rgba(255,255,255,0.7)';
+                scopeCx.beginPath();
+                scopeCx.arc(px, py, 7 * DPR, 0, Math.PI * 2);
+                scopeCx.fill();
+                scopeCx.strokeStyle = '#04070f';
+                scopeCx.lineWidth = 1.5 * DPR;
+                scopeCx.stroke();
+                // label
+                scopeCx.fillStyle = '#F3EEC3';
+                scopeCx.font = 'bold ' + (9 * DPR) + 'px "IBM Plex Mono", monospace';
+                scopeCx.textAlign = 'center';
+                scopeCx.fillText((i + 1) + '', px, py - 10 * DPR);
+                scopeCx.fillStyle = 'rgba(243,238,195,0.7)';
+                scopeCx.font = (7 * DPR) + 'px "IBM Plex Mono", monospace';
+                scopeCx.fillText(p.frequency.toFixed(0) + ' Hz', px, py - 22 * DPR);
+            }
+            scopeCx.textAlign = 'start';
         }
 
-        canvas.addEventListener('pointerdown', e => {
-            const { x, y } = getGridCoords(e);
-            interact(x, y);
+        function drawScopeVoice(R, G, B, col) {
+            const w = scopeCv.width,
+                h = scopeCv.height;
+            scopeCx.fillStyle = 'rgba(4,7,15,0.55)';
+            scopeCx.fillRect(0, 0, w, h);
+            // range guides
+            const sr = ctx ? ctx.sampleRate : 44100;
+            const voiceRangeHz = [80, 1100];
+            const yForFreq = (freq) => {
+                const logMin = Math.log2(voiceRangeHz[0]);
+                const logMax = Math.log2(voiceRangeHz[1]);
+                const frac = (Math.log2(clamp(freq, voiceRangeHz[0], voiceRangeHz[1])) - logMin) / (logMax - logMin);
+                return h - frac * h;
+            };
+            // guide lines for common notes
+            const guideNotes = [82.4, 110, 146.8, 196, 261.6, 349.2, 440, 523.3, 698.5, 880, 1046.5]; // E2 to C6
+            for (const gf of guideNotes) {
+                const gy = yForFreq(gf);
+                scopeCx.strokeStyle = 'rgba(27,39,64,0.5)';
+                scopeCx.lineWidth = 0.5 * DPR;
+                scopeCx.beginPath();
+                scopeCx.moveTo(0, gy);
+                scopeCx.lineTo(w, gy);
+                scopeCx.stroke();
+                scopeCx.fillStyle = 'rgba(74,90,122,0.6)';
+                scopeCx.font = (7 * DPR) + 'px "IBM Plex Mono", monospace';
+                scopeCx.fillText(frequencyToNote(gf).name.replace(/\d/, ''), 2 * DPR, gy - 2 * DPR);
+            }
+            // pitch trace
+            if (voicePitchHistory.length > 1) {
+                scopeCx.strokeStyle = col;
+                scopeCx.lineWidth = 2.5 * DPR;
+                scopeCx.shadowBlur = 8 * DPR;
+                scopeCx.shadowColor = col;
+                scopeCx.beginPath();
+                const now = performance.now();
+                const traceWindow = 8000;
+                let firstPoint = true;
+                for (const pt of voicePitchHistory) {
+                    const age = now - pt.time;
+                    if (age > traceWindow) continue;
+                    const sx = w - (age / traceWindow) * w;
+                    const sy = yForFreq(pt.freq);
+                    if (firstPoint) { scopeCx.moveTo(sx, sy);
+                        firstPoint = false; } else scopeCx.lineTo(sx, sy);
+                }
+                scopeCx.stroke();
+                scopeCx.shadowBlur = 0;
+            }
+            // current pitch dot
+            if (lastFreq > 0 && lastNoteName !== '--') {
+                const cy = yForFreq(lastFreq);
+                scopeCx.fillStyle = col;
+                scopeCx.beginPath();
+                scopeCx.arc(w - 10 * DPR, cy, 8 * DPR, 0, Math.PI * 2);
+                scopeCx.fill();
+                scopeCx.fillStyle = '#F3EEC3';
+                scopeCx.font = 'bold ' + (10 * DPR) + 'px "IBM Plex Mono", monospace';
+                scopeCx.textAlign = 'right';
+                scopeCx.fillText(lastNoteName, w - 24 * DPR, cy + 4 * DPR);
+                scopeCx.textAlign = 'start';
+            }
+            // range indicators
+            if (voiceMaxPitch > 0 && voiceMinPitch < Infinity) {
+                const minY = yForFreq(voiceMinPitch);
+                const maxY = yForFreq(voiceMaxPitch);
+                scopeCx.strokeStyle = 'rgba(255,136,170,0.7)';
+                scopeCx.lineWidth = 1.5 * DPR;
+                scopeCx.setLineDash([5 * DPR, 3 * DPR]);
+                scopeCx.beginPath();
+                scopeCx.moveTo(w * 0.15, minY);
+                scopeCx.lineTo(w, minY);
+                scopeCx.moveTo(w * 0.15, maxY);
+                scopeCx.lineTo(w, maxY);
+                scopeCx.stroke();
+                scopeCx.setLineDash([]);
+                scopeCx.fillStyle = 'rgba(255,136,170,0.9)';
+                scopeCx.font = (8 * DPR) + 'px "IBM Plex Mono", monospace';
+                scopeCx.fillText('MAX ' + frequencyToNote(voiceMaxPitch).name, w * 0.16, maxY - 3 * DPR);
+                scopeCx.fillText('MIN ' + frequencyToNote(voiceMinPitch).name, w * 0.16, minY + 10 * DPR);
+            }
+        }
+
+        function drawScopeImpulse(R, G, B, col) {
+            const w = scopeCv.width,
+                h = scopeCv.height;
+            scopeCx.fillStyle = frozen ? 'rgba(4,7,15,1)' : 'rgba(4,7,15,0.38)';
+            scopeCx.fillRect(0, 0, w, h);
+            // waveform
+            scopeCx.strokeStyle = 'rgba(27,39,64,0.9)';
+            scopeCx.lineWidth = 1;
+            scopeCx.beginPath();
+            scopeCx.moveTo(0, h / 2);
+            scopeCx.lineTo(w, h / 2);
+            scopeCx.stroke();
+            scopeCx.lineWidth = 2 * DPR;
+            scopeCx.strokeStyle = col;
+            scopeCx.shadowBlur = 6 * DPR;
+            scopeCx.shadowColor = col;
+            scopeCx.beginPath();
+            if (running && timeBuf) {
+                const N = timeBuf.length,
+                    step = Math.max(1, (N / w) | 0);
+                let x = 0;
+                for (let i = 0; i < N; i += step) {
+                    const y = h / 2 - timeBuf[i] * h * 0.44;
+                    x === 0 ? scopeCx.moveTo(0, y) : scopeCx.lineTo(x, y);
+                    x = i / (N - 1) * w;
+                }
+            } else { scopeCx.moveTo(0, h / 2);
+                scopeCx.lineTo(w, h / 2); }
+            scopeCx.stroke();
+            scopeCx.shadowBlur = 0;
+            // transient markers on recent impulses
+            const now = performance.now();
+            const traceWindow = 5000;
+            for (const imp of recentImpulses) {
+                const age = now - imp.time;
+                if (age > traceWindow) continue;
+                const sx = w - (age / traceWindow) * w;
+                const alpha = 1 - age / traceWindow;
+                scopeCx.strokeStyle = 'rgba(255,77,77,' + alpha.toFixed(2) + ')';
+                scopeCx.lineWidth = 2 * DPR;
+                scopeCx.beginPath();
+                scopeCx.moveTo(sx, 0);
+                scopeCx.lineTo(sx, h);
+                scopeCx.stroke();
+            }
+            // impulse strength bar
+            const barH = 10 * DPR;
+            const barY = h - barH - 4 * DPR;
+            const barW = w - 12 * DPR;
+            const barX = 6 * DPR;
+            scopeCx.fillStyle = 'rgba(27,39,64,0.6)';
+            scopeCx.fillRect(barX, barY, barW, barH);
+            if (recentImpulses.length > 0) {
+                const lastStr = recentImpulses[recentImpulses.length - 1].strength;
+                const fillW = clamp(lastStr / 35, 0, 1) * barW;
+                const grad = scopeCx.createLinearGradient(barX, 0, barX + barW, 0);
+                grad.addColorStop(0, 'rgba(255,77,77,0.5)');
+                grad.addColorStop(0.7, 'rgba(255,77,77,0.9)');
+                grad.addColorStop(1, 'rgba(255,180,50,0.95)');
+                scopeCx.fillStyle = grad;
+                scopeCx.fillRect(barX, barY, fillW, barH);
+            }
+            scopeCx.fillStyle = 'rgba(243,238,195,0.8)';
+            scopeCx.font = (7 * DPR) + 'px "IBM Plex Mono", monospace';
+            scopeCx.fillText('TRANSIENT STRENGTH', barX, barY - 3 * DPR);
+        }
+
+        function drawSpectrum(R, G, B) {
+            if (!specCx) return;
+            const w = specCv.width,
+                h = specCv.height;
+            specCx.fillStyle = '#04070f';
+            specCx.fillRect(0, 0, w, h);
+            if (!(running && freqBuf && specBins)) return;
+            const bw = w / SPEC_BARS;
+            if (mode === 'resonance') {
+                // highlight peaks in resonance mode
+                const annotated = findHarmonics(resonancePeaks, 0.08);
+                const peakBins = new Set();
+                for (const p of annotated.slice(0, 6)) {
+                    const approxBin = Math.round(p.frequency / ((ctx ? ctx.sampleRate : 44100) / FFT));
+                    peakBins.add(approxBin);
+                }
+                for (let i = 0; i < SPEC_BARS; i++) {
+                    const [lo, hi] = specBins[i];
+                    let sum = 0;
+                    let hasPeak = false;
+                    for (let b = lo; b < hi; b++) { sum += freqBuf[b]; if (peakBins.has(b)) hasPeak = true; }
+                    const mag = (sum / (hi - lo)) / 255;
+                    const bh = mag * h;
+                    specCx.fillStyle = hasPeak ?
+                        'rgba(164,120,232,' + (0.6 + mag * 0.4).toFixed(3) + ')' :
+                        'rgba(' + R + ',' + G + ',' + B + ',' + (0.2 + mag * 0.5).toFixed(3) + ')';
+                    specCx.fillRect(i * bw, h - bh, bw * 0.8, bh);
+                }
+            } else if (mode === 'impulse') {
+                // show recent transient spectrum differently
+                for (let i = 0; i < SPEC_BARS; i++) {
+                    const [lo, hi] = specBins[i];
+                    let sum = 0;
+                    for (let b = lo; b < hi; b++) sum += freqBuf[b];
+                    const mag = (sum / (hi - lo)) / 255;
+                    const bh = mag * h;
+                    specCx.fillStyle = 'rgba(' + R + ',' + G + ',' + B + ',' + (0.2 + mag * 0.7).toFixed(3) + ')';
+                    specCx.fillRect(i * bw, h - bh, bw * 0.8, bh);
+                }
+                if (impulseFlash > 0.3) {
+                    specCx.fillStyle = 'rgba(255,77,77,' + (impulseFlash * 0.25).toFixed(2) + ')';
+                    specCx.fillRect(0, 0, w, h);
+                }
+            } else {
+                for (let i = 0; i < SPEC_BARS; i++) {
+                    const [lo, hi] = specBins[i];
+                    let sum = 0;
+                    for (let b = lo; b < hi; b++) sum += freqBuf[b];
+                    const mag = (sum / (hi - lo)) / 255;
+                    const bh = mag * h;
+                    specCx.fillStyle = 'rgba(' + R + ',' + G + ',' + B + ',' + (0.28 + mag * 0.72).toFixed(3) + ')';
+                    specCx.fillRect(i * bw, h - bh, bw * 0.8, bh);
+                }
+            }
+        }
+
+        function drawMeter(R, G, B, rms) {
+            if (!meterCx) return;
+            const w = meterCv.width,
+                h = meterCv.height;
+            meterCx.fillStyle = '#04070f';
+            meterCx.fillRect(0, 0, w, h);
+            const pad = 6 * DPR,
+                x0 = pad,
+                x1 = w - pad,
+                bw = x1 - x0;
+            meterCx.font = (9 * DPR) + 'px "IBM Plex Mono", monospace';
+            meterCx.textBaseline = 'bottom';
+            for (let db = METER_MIN; db <= METER_MAX; db += 12) {
+                const x = x0 + meterPos(db) * bw;
+                meterCx.strokeStyle = 'rgba(27,39,64,0.9)';
+                meterCx.lineWidth = 1;
+                meterCx.beginPath();
+                meterCx.moveTo(x, 0);
+                meterCx.lineTo(x, h - 16 * DPR);
+                meterCx.stroke();
+                meterCx.fillStyle = 'rgba(74,90,122,0.9)';
+                meterCx.fillText((db === 0 ? '0' : db) + '', x + 2 * DPR, h - 2 * DPR);
+            }
+            const lvlW = meterPos(rms) * bw;
+            const grad = meterCx.createLinearGradient(x0, 0, x1, 0);
+            grad.addColorStop(0, 'rgba(0,221,102,0.85)');
+            grad.addColorStop(0.6, 'rgba(245,181,46,0.85)');
+            grad.addColorStop(1, 'rgba(255,77,77,0.9)');
+            meterCx.fillStyle = grad;
+            meterCx.fillRect(x0, 6 * DPR, lvlW, h - 24 * DPR);
+            meterCx.fillStyle = 'rgb(' + R + ',' + G + ',' + B + ')';
+            meterCx.fillRect(x0 + lvlW - 2 * DPR, 6 * DPR, 2 * DPR, h - 24 * DPR);
+            if (peakHeldDb > METER_MIN) {
+                const px = x0 + meterPos(peakHeldDb) * bw;
+                meterCx.fillStyle = '#F3EEC3';
+                meterCx.fillRect(px - 1.5 * DPR, 4 * DPR, 3 * DPR, h - 20 * DPR);
+            }
+            if (floorDb !== null) {
+                const fx = x0 + meterPos(floorDb) * bw;
+                meterCx.strokeStyle = 'rgba(0,221,102,0.9)';
+                meterCx.lineWidth = 2 * DPR;
+                meterCx.setLineDash([4 * DPR, 3 * DPR]);
+                meterCx.beginPath();
+                meterCx.moveTo(fx, 2 * DPR);
+                meterCx.lineTo(fx, h - 16 * DPR);
+                meterCx.stroke();
+                meterCx.setLineDash([]);
+            }
+        }
+
+        // ===========================================================================
+        // LOG + WIRING
+        // ===========================================================================
+        function log(msg, cls) {
+            $('log').innerHTML = cls ? '<span class="' + cls + '">' + msg + '</span>' : msg;
+        }
+
+        function setMode(newMode) {
+            mode = newMode;
+            // update mode buttons
+            const buttons = $('modeRow').querySelectorAll('.mode-btn');
+            buttons.forEach(b => {
+                b.classList.remove('active', 'tuner-act', 'spec-act', 'scope-act', 'res-act', 'voice-act',
+                    'imp-act');
+                if (b.dataset.mode === mode) {
+                    b.classList.add('active');
+                    if (modeClasses[mode]) b.classList.add(modeClasses[mode]);
+                }
+            });
+            // update labels
+            const labels = {
+                'tuner': 'Tuner · note + cents + frequency',
+                'spectrum': 'Spectrum · full-range FFT view',
+                'oscilloscope': 'Oscilloscope · waveform',
+                'resonance': 'Resonance · dominant peaks + harmonics',
+                'voice': 'Voice · pitch + range estimation',
+                'impulse': 'Impulse · transient detection'
+            };
+            const specLabels = {
+                'tuner': 'Spectrum · log frequency',
+                'spectrum': 'Spectrum details · log frequency',
+                'oscilloscope': 'Spectrum · log frequency',
+                'resonance': 'Peak detail · harmonic markers',
+                'voice': 'Spectrum · voice formants',
+                'impulse': 'Spectrum · transient response'
+            };
+            $('scopeLabel').textContent = labels[mode] || labels['tuner'];
+            $('specLabel').textContent = specLabels[mode] || specLabels['tuner'];
+            // reset mode-specific state
+            if (mode === 'voice') { voiceMinPitch = Infinity;
+                voiceMaxPitch = -Infinity;
+                voicePitchHistory = []; }
+            if (mode === 'impulse') { impulseCount = 0;
+                recentImpulses = [];
+                impulseFlash = 0;
+                rollingRms = -60; }
+            updateModeData();
+            log('Switched to <b>' + mode.toUpperCase() + '</b> mode.');
+        }
+
+        window.addEventListener('load', () => {
+            scopeCv = $('scope');
+            scopeCx = scopeCv.getContext('2d');
+            specCv = $('spectrum');
+            specCx = specCv.getContext('2d');
+            meterCv = $('meter');
+            meterCx = meterCv.getContext('2d');
+            sizeAll();
+            window.addEventListener('resize', sizeAll);
+            window.addEventListener('orientationchange', () => setTimeout(sizeAll, 200));
+            $('btnMic').addEventListener('click', () => running ? stopMic() : startMic());
+            $('btnCal').addEventListener('click', () => { if (!calibrating) startCal(); });
+            $('btnPeak').addEventListener('click', () => { peakHeldDb = DB_FLOOR;
+                log('Peak hold reset.'); });
+            $('btnFreeze').addEventListener('click', () => {
+                if (!running) return;
+                frozen = !frozen;
+                $('btnFreeze').classList.toggle('armed', frozen);
+                $('btnFreeze').textContent = frozen ? 'RESUME' : 'FREEZE';
+                $('stxt').textContent = frozen ? 'FROZEN' : 'LISTENING';
+            });
+            // mode buttons
+            const modeButtons = $('modeRow').querySelectorAll('.mode-btn');
+            modeButtons.forEach(b => {
+                b.addEventListener('click', () => {
+                    const newMode = b.dataset.mode;
+                    if (newMode && newMode !== mode) setMode(newMode);
+                });
+            });
+            updateModeData();
+            requestAnimationFrame(frame);
         });
-        canvas.addEventListener('pointermove', e => {
-            if (e.buttons) {
-                const { x, y } = getGridCoords(e);
-                interact(x, y);
-            }
-        });
-        window.addEventListener('resize', resize);
-
-        // Deterministic Fixed Timestep Accumulator Loop
-        let lastTime = 0;
-        let accumulator = 0;
-        const TIME_STEP = 16.666; // Fixed 60Hz physics clock boundary
-
-        function animate(timestamp) {
-            if (!lastTime) lastTime = timestamp;
-            let dt = timestamp - lastTime;
-            lastTime = timestamp;
-            
-            if (dt > 100) dt = 100; // Shield against structural context switches or tab switching spikes
-            accumulator += dt;
-
-            while (accumulator >= TIME_STEP) {
-                updateWeatherAndTime(TIME_STEP);
-                updateRain();
-                ripple();
-                updateDogAI();
-                updateEntities();
-                accumulator -= TIME_STEP;
-            }
-
-            render();
-            requestAnimationFrame(animate);
-        }
-
-        resize();
-        requestAnimationFrame(animate);
     </script>
 </body>
 </html>
