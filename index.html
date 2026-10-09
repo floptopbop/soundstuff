@@ -1,1643 +1,1122 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>AXIOM-OS // SIGNAL ANALYZER</title>
-<script>
-    if (location.search.indexOf('debug') > -1) { var e = document.createElement('script');
-        e.src = 'https://cdn.jsdelivr.net/npm/eruda';
-        e.onload = function() { eruda.init(); };
-        document.head.appendChild(e); }
-</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Spectro Art</title>
 <style>
-    :root {
-        --void: #060a14;
-        --panel: #0b1220;
-        --panel2: #0e1626;
-        --line: #1b2740;
-        --cream: #F3EEC3;
-        --green: #00dd66;
-        --dim: #4a5a7a;
-        --amber: #f5b52e;
-        --red: #ff4d4d;
-        --cyan: #00ccdd;
-        --violet: #a478e8;
-    }
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-    }
-    html,
-    body {
-        background: var(--void);
-        color: var(--cream);
-        font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
-        font-size: 13px;
-        min-height: 100vh;
-        -webkit-text-size-adjust: 100%;
-        transition: background .4s ease;
-    }
-    #app {
-        max-width: 560px;
-        margin: 0 auto;
-        padding: 12px 12px 40px;
-    }
-    header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 6px 2px 12px;
-        border-bottom: 1px solid var(--line);
-        margin-bottom: 10px;
-    }
-    .sys-tag {
-        font-weight: 700;
-        letter-spacing: .14em;
-        font-size: 12px;
-        color: var(--cream);
-    }
-    .sys-tag .slash {
-        color: var(--dim);
-    }
-    .sys-status {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        font-size: 10px;
-        color: var(--dim);
-        letter-spacing: .12em;
-        font-weight: 600;
-    }
-    .dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #33405c;
-        transition: all .25s;
-    }
-    .dot.live {
-        background: var(--green);
-        box-shadow: 0 0 9px var(--green);
-    }
-    .dot.cal {
-        background: var(--amber);
-        box-shadow: 0 0 9px var(--amber);
-    }
-    .panel {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 5px;
-        padding: 11px;
-        margin-bottom: 10px;
-    }
-    .lbl {
-        font-size: 9px;
-        text-transform: uppercase;
-        letter-spacing: .16em;
-        color: var(--dim);
-        font-weight: 600;
-        margin-bottom: 8px;
-    }
-    #scope {
-        width: 100%;
-        height: 200px;
-        display: block;
-        border-radius: 3px;
-        background: #04070f;
-    }
-    #spectrum {
-        width: 100%;
-        height: 76px;
-        display: block;
-        border-radius: 3px;
-        background: #04070f;
-        margin-top: 4px;
-    }
-    .meter-wrap {
-        display: flex;
-        gap: 14px;
-        align-items: stretch;
-    }
-    .readout-main {
-        flex-shrink: 0;
-        min-width: 150px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-    .db-num {
-        font-size: 52px;
-        line-height: .92;
-        font-weight: 200;
-        letter-spacing: -.01em;
-        color: var(--cream);
-        font-variant-numeric: tabular-nums;
-    }
-    .db-unit {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--dim);
-        letter-spacing: .1em;
-        margin-top: 2px;
-    }
-    .meter-col {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        gap: 6px;
-        min-width: 0;
-    }
-    #meter {
-        width: 100%;
-        height: 84px;
-        display: block;
-        border-radius: 3px;
-        background: #04070f;
-    }
-    .subread {
-        display: flex;
-        gap: 10px;
-    }
-    .stat {
-        flex: 1;
-        background: var(--panel2);
-        border: 1px solid var(--line);
-        border-radius: 3px;
-        padding: 6px 8px;
-        min-width: 0;
-    }
-    .stat .k {
-        font-size: 8px;
-        letter-spacing: .14em;
-        color: var(--dim);
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-    .stat .v {
-        font-size: 15px;
-        font-weight: 400;
-        color: var(--cream);
-        font-variant-numeric: tabular-nums;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-top: 2px;
-    }
-    .stat .v.green {
-        color: var(--green);
-    }
-    .stat .v.pending {
-        color: var(--dim);
-    }
-    .btnrow {
-        display: flex;
-        gap: 7px;
-        margin-bottom: 8px;
-    }
-    .btnrow:last-child {
-        margin-bottom: 0;
-    }
-    .btn {
-        flex: 1;
-        background: var(--panel2);
-        border: 1px solid var(--line);
-        color: var(--cream);
-        padding: 12px 8px;
-        border-radius: 4px;
-        font: inherit;
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: .08em;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background .15s, border-color .15s, opacity .15s;
-    }
-    .btn:active {
-        background: #16223a;
-    }
-    .btn:disabled {
-        opacity: .4;
-        cursor: default;
-    }
-    .btn.primary {
-        background: #0f2a1c;
-        border-color: #17492f;
-        color: var(--green);
-        font-weight: 700;
-    }
-    .btn.primary.on {
-        background: #2a0f14;
-        border-color: #5a1f27;
-        color: var(--red);
-    }
-    .btn.armed {
-        background: #2a230f;
-        border-color: #4a3d17;
-        color: var(--amber);
-    }
-    #log {
-        font-size: 9.5px;
-        color: var(--dim);
-        padding: 8px 2px 0;
-        border-top: 1px solid var(--line);
-        margin-top: 4px;
-        min-height: 16px;
-        letter-spacing: .03em;
-        line-height: 1.4;
-    }
-    #log b {
-        color: var(--green);
-        font-weight: 600;
-    }
-    #log .warn {
-        color: var(--amber);
-    }
-    .mode-row {
-        display: flex;
-        gap: 4px;
-        margin-bottom: 10px;
-        flex-wrap: wrap;
-    }
-    .mode-btn {
-        flex: 1;
-        min-width: 52px;
-        background: var(--panel2);
-        border: 1px solid var(--line);
-        color: var(--dim);
-        padding: 8px 3px;
-        border-radius: 3px;
-        font: inherit;
-        font-size: 9px;
-        text-transform: uppercase;
-        letter-spacing: .1em;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background .15s, border-color .15s, color .15s;
-        text-align: center;
-        white-space: nowrap;
-    }
-    .mode-btn:active {
-        background: #16223a;
-    }
-    .mode-btn.active {
-        background: #0f1a2c;
-        border-color: #2a5080;
-        color: var(--cream);
-    }
-    .mode-btn.active.tuner-act {
-        border-color: var(--cyan);
-        color: var(--cyan);
-    }
-    .mode-btn.active.spec-act {
-        border-color: var(--green);
-        color: var(--green);
-    }
-    .mode-btn.active.scope-act {
-        border-color: var(--amber);
-        color: var(--amber);
-    }
-    .mode-btn.active.res-act {
-        border-color: var(--violet);
-        color: var(--violet);
-    }
-    .mode-btn.active.voice-act {
-        border-color: #ff88aa;
-        color: #ff88aa;
-    }
-    .mode-btn.active.imp-act {
-        border-color: var(--red);
-        color: var(--red);
-    }
-    #modeData {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-top: 4px;
-        min-height: 28px;
-        align-items: center;
-    }
-    #modeData .md-stat {
-        flex: 1;
-        min-width: 60px;
-        background: var(--panel2);
-        border: 1px solid var(--line);
-        border-radius: 3px;
-        padding: 4px 7px;
-        text-align: center;
-    }
-    #modeData .md-k {
-        font-size: 7px;
-        letter-spacing: .14em;
-        color: var(--dim);
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-    #modeData .md-v {
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--cream);
-        font-variant-numeric: tabular-nums;
-        margin-top: 1px;
-    }
-    #modeData .md-v.big {
-        font-size: 22px;
-        font-weight: 600;
-        letter-spacing: .02em;
-    }
-    #modeData .md-v.highlight {
-        color: var(--cyan);
-    }
-    #modeData .md-v.warn {
-        color: var(--red);
-    }
-    .impulse-flash {
-        animation: impFlash .3s ease-out;
-    }
-    @keyframes impFlash {
-        0% {
-            box-shadow: 0 0 20px var(--red), 0 0 40px var(--red);
-        }
-        100% {
-            box-shadow: 0 0 0px transparent;
-        }
-    }
+:root{
+  --bg:#0d0c11; --panel:#16141b; --panel2:#1e1b25; --line:#2a2633;
+  --ink:#c9c3d1; --dim:#7d7689; --accent:#d4a574; --warn:#d98b6a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font:11px/1.3 -apple-system,"SF Pro Text",system-ui,sans-serif;
+  overscroll-behavior:none;-webkit-user-select:none;user-select:none;
+  -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+#app{display:flex;flex-direction:column;height:100%;
+  padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+
+header{display:flex;align-items:baseline;gap:8px;padding:5px 10px 3px;flex:none}
+header .ttl{font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--ink)}
+header .deco{font-size:11px;color:var(--dim)}
+header #srcname{margin-left:auto;color:var(--dim);font-size:10px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;max-width:48%}
+
+#view{position:relative;flex:1;min-height:0}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#hud{position:absolute;left:8px;right:8px;top:1px;height:16px;line-height:16px;
+  font:10px ui-monospace,Menlo,monospace;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;color:var(--dim);pointer-events:none}
+#hud .w{color:var(--warn)}
+
+#transport{display:flex;align-items:center;gap:6px;padding:4px 8px;flex:none;
+  border-top:1px solid var(--line);background:var(--panel)}
+#tm{margin-left:auto;font:10px ui-monospace,Menlo,monospace;color:var(--dim);white-space:nowrap}
+.b{height:26px;padding:0 10px;font:inherit;font-size:11px;color:var(--ink);
+  background:var(--panel2);border:1px solid var(--line);border-radius:4px;
+  touch-action:manipulation;cursor:pointer}
+.b:active{background:#2a2633}
+.b.p{border-color:#6b5740;color:var(--accent)}
+.b[disabled]{opacity:.45}
+.auto{display:flex;align-items:center;gap:4px;color:var(--dim);font-size:10px}
+.auto input{margin:0}
+
+#deck{flex:none;max-height:30vh;display:flex;flex-direction:column;
+  background:var(--panel);border-top:1px solid var(--line)}
+#tabs{display:flex;height:26px;flex:none;align-items:stretch}
+.tab{flex:0 0 auto;padding:0 9px;border:0;background:transparent;color:var(--dim);
+  font:inherit;font-size:11px;border-bottom:2px solid transparent;touch-action:manipulation}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+#fold{margin-left:auto;width:34px;border:0;background:transparent;color:var(--dim);font-size:12px}
+#body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 10px 8px}
+#deck.collapsed #body{display:none}
+.pane{display:none;grid-template-columns:1fr 1fr;gap:5px 14px;align-content:start}
+.pane.on{display:grid}
+.wide{grid-column:1/-1}
+.row{display:flex;gap:6px;flex-wrap:wrap}
+.c .l{display:flex;justify-content:space-between;color:var(--dim);font-size:10px;margin-bottom:1px}
+.c .l b{font-weight:400;color:var(--ink);font-family:ui-monospace,Menlo,monospace}
+.c.ck{display:flex;align-items:center;gap:6px;color:var(--ink);font-size:11px;min-height:26px}
+.c.ck input{margin:0}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:20px;
+  background:transparent;margin:0;touch-action:pan-y}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:#3a3544;border-radius:1px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;
+  margin-top:-6px;border-radius:50%;background:var(--accent);border:0}
+input[type=range]::-moz-range-track{height:2px;background:#3a3544}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);border:0}
+select{width:100%;height:24px;font:inherit;font-size:11px;color:var(--ink);
+  background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+#prev{display:block;width:100%;height:64px;border:1px solid var(--line);border-radius:3px;background:#000}
+.note{color:var(--dim);font-size:10px}
+#statGrid{display:grid;grid-template-columns:1fr 1fr;gap:1px 14px}
+#statGrid div{display:flex;justify-content:space-between;gap:6px;font-size:10px;color:var(--dim);
+  border-bottom:1px solid #211e29;padding:1px 0;min-width:0}
+#statGrid b{font-weight:400;color:var(--ink);font-family:ui-monospace,Menlo,monospace;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#avg{display:block;width:100%;height:72px;border:1px solid var(--line);border-radius:3px;background:#000}
+#peaks{font:10px/1.4 ui-monospace,Menlo,monospace;color:var(--ink);white-space:pre;overflow-x:auto}
 </style>
 </head>
 <body>
-    <div id="app">
-        <header>
-            <div class="sys-tag">AXIOM-OS <span class="slash">//</span> SIGNAL ANALYZER</div>
-            <div class="sys-status"><span class="dot" id="dot"></span><span id="stxt">OFFLINE</span></div>
-        </header>
+<div id="app">
+  <header>
+    <span class="ttl">Spectro Art</span><span class="deco">音画</span>
+    <span id="srcname"></span>
+  </header>
 
-        <!-- MODE SELECTOR -->
-        <div class="mode-row" id="modeRow">
-            <button class="mode-btn active tuner-act" data-mode="tuner">TUNER</button>
-            <button class="mode-btn spec-act" data-mode="spectrum">SPECTRUM</button>
-            <button class="mode-btn scope-act" data-mode="oscilloscope">SCOPE</button>
-            <button class="mode-btn res-act" data-mode="resonance">RESONANCE</button>
-            <button class="mode-btn voice-act" data-mode="voice">VOICE</button>
-            <button class="mode-btn imp-act" data-mode="impulse">IMPULSE</button>
-        </div>
+  <div id="view"><canvas id="cv"></canvas><div id="hud"></div></div>
 
-        <!-- SCOPE -->
-        <div class="panel" id="scopePanel">
-            <div class="lbl" id="scopeLabel">Tuner &middot; note + cents + frequency</div>
-            <canvas id="scope"></canvas>
-            <div id="modeData"></div>
-            <div class="lbl" style="margin-top:9px;" id="specLabel">Spectrum &middot; log frequency</div>
-            <canvas id="spectrum"></canvas>
-        </div>
+  <div id="transport">
+    <button class="b p" id="bPlay">Play</button>
+    <button class="b" id="bEnc">Encode</button>
+    <button class="b" id="bMic">Mic</button>
+    <label class="auto"><input type="checkbox" id="auto">Auto</label>
+    <span id="tm">0.0 / 0.0 s</span>
+  </div>
 
-        <!-- METER -->
-        <div class="panel">
-            <div class="lbl">Level &middot; dBFS &middot; floor-referenced</div>
-            <div class="meter-wrap">
-                <div class="readout-main">
-                    <div class="db-num" id="dbNum">&minus;&infin;</div>
-                    <div class="db-unit">dBFS RMS</div>
-                </div>
-                <div class="meter-col">
-                    <canvas id="meter"></canvas>
-                </div>
-            </div>
-            <div class="subread" style="margin-top:9px;">
-                <div class="stat"><div class="k">Peak hold</div><div class="v" id="stPeak">&minus;&infin;</div></div>
-                <div class="stat"><div class="k">Noise floor</div><div class="v pending" id="stFloor">not set</div></div>
-                <div class="stat"><div class="k">Above floor</div><div class="v pending" id="stAbove">&mdash;</div></div>
-            </div>
-        </div>
+  <div id="deck">
+    <div id="tabs"></div>
+    <div id="body"></div>
+  </div>
+</div>
 
-        <!-- CONTROLS -->
-        <div class="panel">
-            <div class="btnrow">
-                <button class="btn primary" id="btnMic">&#9679; START MIC</button>
-                <button class="btn" id="btnCal" disabled>CALIBRATE FLOOR</button>
-            </div>
-            <div class="btnrow">
-                <button class="btn" id="btnPeak" disabled>RESET PEAK</button>
-                <button class="btn" id="btnFreeze" disabled>FREEZE</button>
-            </div>
-            <div id="log">Tap Start mic to begin. Sits quiet until you allow microphone access.</div>
-        </div>
-    </div>
+<input type="file" id="fImg" accept="image/*" hidden>
+<input type="file" id="fAud" accept="audio/*,video/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,.mov" hidden>
 
-    <script>
-        const $ = id => document.getElementById(id);
-        const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-        const lerp = (a, b, t) => a + (b - a) * t;
-        let DPR = Math.min(window.devicePixelRatio || 1, 2);
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const cv=$('cv'), g=cv.getContext('2d');
 
-        // ---- meter / analysis constants -------------------------------------------
-        const FFT = 2048;
-        const SMOOTH = 0.8;
-        const DB_FLOOR = -90;
-        const METER_MIN = -72;
-        const METER_MAX = 0;
-        const PEAK_DECAY = 11;
-        const SPEC_BARS = 52;
-        const CAL_MS = 1500;
+/* ───────── controls ───────── */
+const TABS=[['image','Image'],['tones','Tones'],['levels','Levels'],['view','View'],['mic','Mic'],['stats','Stats'],['file','File']];
+const OPT_FFT=[['512','512'],['1024','1024'],['2048','2048'],['4096','4096'],['8192','8192']];
+const C=[
+ // image → matrix
+ {tab:'image',k:'invert',t:'Invert image',ty:'check',def:false,cat:'enc'},
+ {tab:'image',k:'black',t:'Black point',min:0,max:90,step:1,def:0,cat:'enc',f:v=>v+'%'},
+ {tab:'image',k:'white',t:'White point',min:10,max:100,step:1,def:100,cat:'enc',f:v=>v+'%'},
+ {tab:'image',k:'gamma',t:'Input curve',min:.3,max:3,step:.05,def:1,cat:'enc',f:v=>(+v).toFixed(2)},
+ // tone bank
+ {tab:'tones',k:'dur',t:'Duration',min:2,max:40,step:.5,def:12,cat:'enc',f:v=>(+v).toFixed(1)+' s'},
+ {tab:'tones',k:'tones',t:'Tones (image rows)',min:16,max:400,step:1,def:128,cat:'enc'},
+ {tab:'tones',k:'cols',t:'Columns (image time steps)',min:16,max:512,step:1,def:256,cat:'enc'},
+ {tab:'tones',k:'fLo',t:'Lowest tone',min:50,max:12000,step:10,def:200,cat:'enc',f:v=>v+' Hz'},
+ {tab:'tones',k:'fHi',t:'Highest tone',min:200,max:16000,step:10,def:8000,cat:'enc',f:v=>v+' Hz'},
+ {tab:'tones',k:'fscale',t:'Tone spacing',ty:'select',opts:[['lin','Linear'],['log','Logarithmic']],def:'lin',cat:'enc'},
+ {tab:'tones',k:'phase',t:'Tone phase',ty:'select',opts:[['rand','Random'],['zero','Aligned']],def:'rand',cat:'enc'},
+ // levels
+ {tab:'levels',k:'amp',t:'Brightness to loudness',ty:'select',opts:[['db','Decibel-linear'],['lin','Linear amplitude']],def:'db',cat:'enc'},
+ {tab:'levels',k:'range',t:'Encode range',min:12,max:90,step:1,def:48,cat:'enc',f:v=>v+' dB'},
+ {tab:'levels',k:'level',t:'Output level',min:.1,max:1,step:.01,def:.9,cat:'enc',f:v=>(+v).toFixed(2)},
+ {tab:'levels',k:'fade',t:'Edge fade',min:0,max:500,step:5,def:30,cat:'enc',f:v=>v+' ms'},
+ // view
+ {tab:'view',k:'fft',t:'FFT size',ty:'select',opts:OPT_FFT,def:'2048',cat:'fft'},
+ {tab:'view',k:'frames',t:'Time columns',min:200,max:2400,step:50,def:1200,cat:'fft'},
+ {tab:'view',k:'vrange',t:'Display range',min:20,max:100,step:1,def:60,cat:'paint',f:v=>v+' dB'},
+ {tab:'view',k:'vgamma',t:'Display curve',min:.3,max:3,step:.05,def:1,cat:'paint',f:v=>(+v).toFixed(2)},
+ {tab:'view',k:'cmap',t:'Colour map',ty:'select',opts:[['magma','Magma'],['inferno','Inferno'],['gray','Gray']],def:'magma',cat:'paint'},
+ {tab:'view',k:'cinv',t:'Reverse colours',ty:'check',def:false,cat:'paint'},
+ {tab:'view',k:'vfit',t:'Fit view to tone band',ty:'check',def:true,cat:'paint'},
+ {tab:'view',k:'vscale',t:'Frequency axis',ty:'select',opts:[['lin','Linear'],['log','Logarithmic']],def:'lin',cat:'paint'},
+ {tab:'view',k:'vLo',t:'View low',min:0,max:20000,step:50,def:0,cat:'paint',f:v=>v+' Hz'},
+ {tab:'view',k:'vHi',t:'View high',min:500,max:22050,step:50,def:9000,cat:'paint',f:v=>v+' Hz'},
+ {tab:'view',k:'grid',t:'Grid lines',ty:'check',def:false,cat:'draw'},
+ {tab:'view',k:'reveal',t:'Reveal while playing',ty:'check',def:true,cat:'draw'},
+ // live mic
+ {tab:'mic',k:'lwin',t:'Window',min:3,max:60,step:1,def:15,cat:'live',f:v=>v+' s'},
+ {tab:'mic',k:'lhop',t:'Update interval',min:10,max:100,step:5,def:30,cat:'live',f:v=>v+' ms'},
+ {tab:'mic',k:'lceil',t:'Top level',min:-90,max:0,step:1,def:-20,cat:'paint',f:v=>v+' dBFS'},
+ {tab:'mic',k:'lsmooth',t:'Smoothing',min:0,max:.9,step:.05,def:0,cat:'draw',f:v=>(+v).toFixed(2)},
+ {tab:'mic',k:'lmax',t:'Max recording',min:10,max:600,step:10,def:120,cat:'draw',f:v=>v+' s'},
+ {tab:'mic',k:'lraw',t:'Raw input (no auto-gain, no noise cut)',ty:'check',def:true,cat:'live'},
+ {tab:'mic',k:'lfreeze',t:'Freeze display',ty:'check',def:false,cat:'draw'},
+];
+const P={}, reg={};
 
-        // ---- state ----------------------------------------------------------------
-        let ctx = null,
-            stream = null,
-            source = null,
-            analyser = null;
-        let timeBuf = null,
-            freqBuf = null,
-            specBins = null;
-        let running = false,
-            frozen = false,
-            calibrating = false;
-        let calStart = 0,
-            calSamples = [];
-        let floorDb = null;
-        let peakHeldDb = DB_FLOOR;
-        let lastT = 0;
-        let dispHue = 150;
+function mk(c){
+  P[c.k]=c.def;
+  const ty=c.ty||'range';
+  const wrap=document.createElement(ty==='check'?'label':'div');
+  wrap.className='c'+(ty==='check'?' ck':'');
+  let el,vEl=null;
+  if(ty==='check'){
+    el=document.createElement('input'); el.type='checkbox'; el.checked=!!c.def;
+    const s=document.createElement('span'); s.textContent=c.t;
+    wrap.append(el,s);
+    el.addEventListener('change',()=>{P[c.k]=el.checked;hit(c,true)});
+  }else if(ty==='select'){
+    wrap.innerHTML='<div class="l"><span></span></div>';
+    wrap.firstChild.firstChild.textContent=c.t;
+    el=document.createElement('select');
+    for(const [v,n] of c.opts){const o=document.createElement('option');o.value=v;o.textContent=n;el.appendChild(o);}
+    el.value=c.def; wrap.appendChild(el);
+    el.addEventListener('change',()=>{P[c.k]=el.value;hit(c,true)});
+  }else{
+    wrap.innerHTML='<div class="l"><span></span><b></b></div>';
+    wrap.firstChild.firstChild.textContent=c.t;
+    vEl=wrap.firstChild.lastChild;
+    el=document.createElement('input'); el.type='range';
+    el.min=c.min; el.max=c.max; el.step=c.step; el.value=c.def;
+    const fmt=c.f||(v=>v);
+    vEl.textContent=fmt(c.def);
+    el.addEventListener('input',()=>{P[c.k]=+el.value;vEl.textContent=fmt(+el.value);hit(c,false)});
+    el.addEventListener('change',()=>hit(c,true));
+    wrap.appendChild(el);
+  }
+  reg[c.k]={c,el,vEl};
+  return wrap;
+}
+function setParam(k,v){
+  const r=reg[k]; P[k]=v;
+  if(r.el.type==='checkbox') r.el.checked=!!v; else r.el.value=v;
+  if(r.vEl) r.vEl.textContent=(r.c.f||(x=>x))(v);
+}
+function hit(c,final){
+  if(c.cat==='enc') markStale();
+  else if(c.cat==='fft'){ if(final){ if(live) reconfigureLive(); else analyze(); } }
+  else if(c.cat==='live'){ if(final) liveParamChanged(c.k); }
+  else if(c.cat==='paint') schedulePaint();
+  else draw();
+}
 
-        // mode
-        let mode = 'tuner';
-        const modeClasses = {
-            'tuner': 'tuner-act',
-            'spectrum': 'spec-act',
-            'oscilloscope': 'scope-act',
-            'resonance': 'res-act',
-            'voice': 'voice-act',
-            'impulse': 'imp-act'
-        };
+function btn(label,fn,cls){
+  const b=document.createElement('button'); b.className='b'+(cls?' '+cls:''); b.textContent=label;
+  b.addEventListener('click',fn); return b;
+}
+function buildUI(){
+  const tabs=$('tabs'), body=$('body');
+  for(const [id,name] of TABS){
+    const t=document.createElement('button'); t.className='tab'; t.textContent=name; t.dataset.t=id;
+    t.addEventListener('click',()=>{ $('deck').classList.remove('collapsed'); fold(); showTab(id); });
+    tabs.appendChild(t);
+    const p=document.createElement('div'); p.className='pane'; p.id='pane_'+id; body.appendChild(p);
+  }
+  const f=document.createElement('button'); f.id='fold'; f.textContent='▾'; f.title='Collapse panel';
+  f.addEventListener('click',()=>{$('deck').classList.toggle('collapsed');fold();});
+  tabs.appendChild(f);
+  for(const c of C) $('pane_'+c.tab).appendChild(mk(c));
 
-        // tuner / voice state
-        let lastNoteName = '--';
-        let lastCents = 0;
-        let lastFreq = 0;
-        let pitchConfidence = 0;
+  // image tab extras
+  const pi=$('pane_image');
+  const row=document.createElement('div'); row.className='row wide';
+  row.append(
+    btn('Open image',()=>$('fImg').click()),
+    btn('Test card',()=>{setSource(testCard(),'test card');}),
+    btn('Open audio',()=>$('fAud').click())
+  );
+  const pv=document.createElement('div'); pv.className='wide';
+  pv.innerHTML='<div class="l" style="display:flex;justify-content:space-between;color:var(--dim);font-size:10px;margin-bottom:2px"><span>What gets encoded</span><span>top = high pitch</span></div><canvas id="prev"></canvas>';
+  pi.prepend(pv); pi.prepend(row);
 
-        // voice range tracking
-        let voiceMinPitch = Infinity;
-        let voiceMaxPitch = -Infinity;
-        let voicePitchHistory = []; // ring buffer for scrolling trace
+  // file tab
+  const pf=$('pane_file');
+  const r2=document.createElement('div'); r2.className='row wide';
+  r2.append(btn('Save WAV',saveWav),btn('Save spectrogram PNG',savePng));
+  const n=document.createElement('div'); n.className='note wide';
+  n.textContent='WAV is the mono encoded sound. Play it through anything, then open it with Open audio to see the picture again.';
+  pf.append(r2,n);
+  r2.append(btn('Save stats JSON',saveStats));
 
-        // resonance state
-        let resonancePeaks = [];
+  // mic tab extras
+  const pm=$('pane_mic');
+  const dv=document.createElement('div'); dv.className='c wide';
+  dv.innerHTML='<div class="l"><span>Input device</span></div><select id="mdev"><option value="">Default</option></select>';
+  const mn=document.createElement('div'); mn.className='note wide';
+  mn.textContent='Mic starts the live waterfall and records at the same time. Stop mic keeps the recording as a file you can play, scrub, analyse and save.';
+  pm.prepend(mn); pm.prepend(dv);
+  $('mdev').addEventListener('change',()=>{ if(live) reacquire(); });
 
-        // impulse state
-        let rollingRms = -60;
-        let impulseCount = 0;
-        let lastImpulseTime = 0;
-        let impulseFlash = 0; // 0..1 decay
-        let recentImpulses = []; // last few impulse strengths
+  // stats tab
+  const ps=$('pane_stats');
+  ps.innerHTML='<div id="statGrid" class="wide"></div><canvas id="avg" class="wide"></canvas><div id="peaks" class="wide"></div>';
+  const rs=document.createElement('div'); rs.className='row wide'; rs.append(btn('Refresh',()=>refreshStats()));
+  ps.append(rs);
 
-        // canvases
-        let scopeCv, scopeCx, specCv, specCx, meterCv, meterCx;
+  showTab('image');
+}
+function showTab(id){
+  for(const t of document.querySelectorAll('.tab')) t.classList.toggle('on',t.dataset.t===id);
+  for(const p of document.querySelectorAll('.pane')) p.classList.toggle('on',p.id==='pane_'+id);
+  if(id==='stats') refreshStats();
+}
+function fold(){ $('fold').textContent=$('deck').classList.contains('collapsed')?'▴':'▾'; }
 
-        // ===========================================================================
-        // SIZING
-        // ===========================================================================
-        function sizeCanvas(cv) {
-            if (!cv) return;
-            const r = cv.getBoundingClientRect();
-            cv.width = Math.max(1, Math.round(r.width * DPR));
-            cv.height = Math.max(1, Math.round((r.height || 1) * DPR));
+/* ───────── state ───────── */
+let actx=null, cur=null, spec=null, plot=null, dpr=1, specCv=null;
+let srcCv=null, stale=false, busy=false, again=false, busyMsg='';
+let playing=false, pos=0, startAt=0, curSrc=null, scrub=false, rafId=0, analyzeId=0;
+const curs={on:false,x:0,y:0};
+let prevT=0, autoT=0, paintQ=0;
+const yieldUI=()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));
+
+/* ───────── source image ───────── */
+function resample(src,sw,sh,tw,th){
+  let cc=src,cw=sw,ch=sh;
+  for(;;){
+    const nw=cw>tw*2?Math.ceil(cw/2):tw, nh=ch>th*2?Math.ceil(ch/2):th;
+    const c=document.createElement('canvas'); c.width=nw; c.height=nh;
+    const x=c.getContext('2d'); x.imageSmoothingEnabled=true; x.imageSmoothingQuality='high';
+    x.fillStyle='#000'; x.fillRect(0,0,nw,nh); x.drawImage(cc,0,0,cw,ch,0,0,nw,nh);
+    cc=c; cw=nw; ch=nh;
+    if(cw===tw&&ch===th) break;
+  }
+  return cc;
+}
+function setSource(img,name){
+  const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+  const s=Math.min(1,1024/Math.max(w,h));
+  srcCv=resample(img,w,h,Math.max(1,Math.round(w*s)),Math.max(1,Math.round(h*s)));
+  $('srcname').textContent=name;
+  updatePreview(); markStale();
+}
+function testCard(){
+  const c=document.createElement('canvas'); c.width=512; c.height=384;
+  const x=c.getContext('2d'); x.fillStyle='#000'; x.fillRect(0,0,512,384);
+  const gr=x.createRadialGradient(256,150,8,256,150,130);
+  gr.addColorStop(0,'#fff'); gr.addColorStop(.45,'#9a9a9a'); gr.addColorStop(1,'#000');
+  x.fillStyle=gr; x.beginPath(); x.arc(256,150,130,0,Math.PI*2); x.fill();
+  x.strokeStyle='#fff'; x.lineWidth=9; x.beginPath(); x.arc(256,150,150,0,Math.PI*2); x.stroke();
+  x.lineWidth=5; for(let i=0;i<9;i++){x.globalAlpha=.25+i*.09;x.beginPath();x.moveTo(20+i*14,330-i*0);x.lineTo(150+i*14,310);x.stroke();}
+  x.globalAlpha=1;
+  const lg=x.createLinearGradient(0,0,512,0); lg.addColorStop(0,'#000'); lg.addColorStop(1,'#fff');
+  x.fillStyle=lg; x.fillRect(190,318,300,16);
+  x.fillStyle='#fff'; x.font='bold 54px -apple-system,Helvetica,Arial,sans-serif';
+  x.textAlign='left'; x.textBaseline='alphabetic'; x.fillText('SCAN',20,372);
+  return c;
+}
+function loadImageFile(f){
+  const url=URL.createObjectURL(f), im=new Image();
+  im.onload=()=>{setSource(im,f.name);URL.revokeObjectURL(url);};
+  im.onerror=()=>{busyMsg='';setHudWarn('could not read that image');URL.revokeObjectURL(url);};
+  im.src=url;
+}
+
+/* ───────── image → matrix ───────── */
+function buildMatrix(){
+  const R=+P.tones, Cc=+P.cols;
+  const sm=resample(srcCv,srcCv.width,srcCv.height,Cc,R);
+  const d=sm.getContext('2d').getImageData(0,0,Cc,R).data;
+  const M=new Float32Array(R*Cc);
+  const b=P.black/100, w=Math.max(P.white/100,b+.02), gm=+P.gamma;
+  for(let i=0;i<R*Cc;i++){
+    const l=(0.2126*d[4*i]+0.7152*d[4*i+1]+0.0722*d[4*i+2])/255;
+    let v=(l-b)/(w-b); v=v<0?0:v>1?1:v;
+    if(P.invert) v=1-v;
+    if(gm!==1) v=Math.pow(v,gm);
+    M[i]=v;
+  }
+  return {M,R,C:Cc};
+}
+function updatePreview(){
+  if(!srcCv) return;
+  const m=buildMatrix(), pc=$('prev'); pc.width=m.C; pc.height=m.R;
+  const x=pc.getContext('2d'), id=x.createImageData(m.C,m.R);
+  for(let i=0;i<m.M.length;i++){const v=Math.round(m.M[i]*255);id.data[4*i]=id.data[4*i+1]=id.data[4*i+2]=v;id.data[4*i+3]=255;}
+  x.putImageData(id,0,0);
+}
+function markStale(){
+  stale=true; clearTimeout(prevT); prevT=setTimeout(updatePreview,60); refreshHUD();
+  if($('auto').checked){clearTimeout(autoT);autoT=setTimeout(()=>encode(),700);}
+}
+
+/* ───────── encoder: image → additive sines ───────── */
+function effCfg(){
+  const SR=44100;
+  let fLo=+P.fLo, fHi=+P.fHi;
+  fHi=Math.min(fHi,SR/2-200); fLo=Math.min(fLo,fHi-100);
+  return {SR,fLo,fHi,R:+P.tones,Cc:+P.cols,dur:+P.dur,fscale:P.fscale};
+}
+async function encode(){
+  if(!srcCv) return;
+  if(live){setHudWarn('stop the mic first');return;}
+  if(busy){again=true;return;}
+  busy=true; $('bEnc').disabled=true; again=false;
+  stopPlay(true);
+  const cfg=effCfg(), SR=cfg.SR, R=cfg.R, Cc=cfg.Cc;
+  const N=Math.round(cfg.dur*SR), L=N/Cc;
+  const {M}=buildMatrix();
+  const rangeDb=+P.range;
+  const ampOf=P.amp==='db'
+    ? v=>v<=0?0:Math.pow(10,(v-1)*rangeDb/20)*Math.min(1,v/0.03)
+    : v=>v;
+  const out=new Float32Array(N);
+  const A=new Float32Array(Cc), Pd=new Float32Array(Cc+2);
+  for(let r=0;r<R;r++){
+    const fr=R>1?r/(R-1):0;
+    const f=cfg.fscale==='log'?cfg.fHi*Math.pow(cfg.fLo/cfg.fHi,fr):cfg.fHi-fr*(cfg.fHi-cfg.fLo);
+    let any=false;
+    for(let c=0;c<Cc;c++){const a=ampOf(M[r*Cc+c]);A[c]=a;if(a>0)any=true;}
+    if(any){
+      const w=2*Math.PI*f/SR, k=2*Math.cos(w), ph0=P.phase==='rand'?Math.random()*2*Math.PI:0;
+      Pd[0]=A[0]; for(let c=0;c<Cc;c++) Pd[c+1]=A[c]; Pd[Cc+1]=A[Cc-1];
+      for(let j=0;j<=Cc;j++){
+        const a0=Pd[j], a1=Pd[j+1];
+        if(a0===0&&a1===0) continue;
+        const sS=(j-.5)*L, sE=(j+.5)*L;
+        const s=Math.max(0,Math.ceil(sS)), e=Math.min(N,Math.ceil(sE));
+        if(e<=s) continue;
+        const slope=(a1-a0)/L;
+        let amp=a0+(s-sS)*slope;
+        let y1=Math.sin(ph0+w*(s-1)), y2=Math.sin(ph0+w*(s-2));
+        for(let n=s;n<e;n++){
+          const y=k*y1-y2; out[n]+=amp*y; y2=y1; y1=y; amp+=slope;
         }
+      }
+    }
+    if((r&3)===3){busyMsg='encoding '+Math.round(r/R*100)+'%';refreshHUD();await yieldUI();}
+  }
+  // fade + normalise
+  const nf=Math.min(Math.round(P.fade/1000*SR),N>>1);
+  for(let i=0;i<nf;i++){const m=i/nf;out[i]*=m;out[N-1-i]*=m;}
+  let pk=0; for(let i=0;i<N;i++){const a=Math.abs(out[i]);if(a>pk)pk=a;}
+  const sc=pk>0?(+P.level)/pk:0; for(let i=0;i<N;i++) out[i]*=sc;
+  cur={data:out,sr:SR,dur:N/SR,name:'encoded',encoded:true,cfg:{fLo:cfg.fLo,fHi:cfg.fHi,R,Cc,dur:cfg.dur,fscale:cfg.fscale}};
+  pos=0; stale=false; busyMsg=''; busy=false; $('bEnc').disabled=false;
+  updateTime();
+  await analyze();
+  if(again){again=false;encode();}
+}
 
-        function sizeAll() { [scopeCv, specCv, meterCv].forEach(sizeCanvas); }
-
-        // ===========================================================================
-        // AUDIO
-        // ===========================================================================
-        async function startMic() {
-            try {
-                const AC = window.AudioContext || window.webkitAudioContext;
-                if (!AC) { log('This browser has no Web Audio support.', 'warn'); return; }
-                if (!ctx) ctx = new AC();
-                if (ctx.state !== 'running') { try { await ctx.resume(); } catch (e) {} }
-                const want = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } };
-                try { stream = await navigator.mediaDevices.getUserMedia(want); } catch (e) { stream =
-                        await navigator.mediaDevices.getUserMedia({ audio: true }); }
-                source = ctx.createMediaStreamSource(stream);
-                analyser = ctx.createAnalyser();
-                analyser.fftSize = FFT;
-                analyser.smoothingTimeConstant = SMOOTH;
-                source.connect(analyser);
-                const n = analyser.fftSize;
-                timeBuf = new Float32Array(n);
-                freqBuf = new Uint8Array(analyser.frequencyBinCount);
-                buildSpecBins();
-                running = true;
-                frozen = false;
-                voiceMinPitch = Infinity;
-                voiceMaxPitch = -Infinity;
-                voicePitchHistory = [];
-                impulseCount = 0;
-                rollingRms = -60;
-                recentImpulses = [];
-                impulseFlash = 0;
-                $('dot').className = 'dot live';
-                $('stxt').textContent = 'LISTENING';
-                $('btnMic').classList.add('on');
-                $('btnMic').innerHTML = '\u25A0 STOP MIC';
-                $('btnCal').disabled = false;
-                $('btnPeak').disabled = false;
-                $('btnFreeze').disabled = false;
-                log('<b>Live.</b> Mode: <b>' + mode.toUpperCase() +
-                    '</b>. Calibrate the floor in a quiet moment to reference every reading against the room.');
-            } catch (err) {
-                console.error(err);
-                const name = err && err.name;
-                if (name === 'NotAllowedError' || name === 'SecurityError') {
-                    log(
-                        'Microphone blocked. Allow mic access for this page, then tap Start again. (Mic needs an https:// or localhost address.)',
-                        'warn');
-                } else if (name === 'NotFoundError') { log('No microphone found on this device.', 'warn'); } else { log(
-                        'Could not open the mic: ' + (err && err.message || err), 'warn'); }
-            }
+/* ───────── STFT ───────── */
+const fftCache={};
+function getFFT(n){
+  if(fftCache[n]) return fftCache[n];
+  const rev=new Uint32Array(n), cs=new Float64Array(n/2), sn=new Float64Array(n/2);
+  const bits=Math.log2(n)|0;
+  for(let i=0;i<n;i++){let r=0,x=i;for(let b=0;b<bits;b++){r=(r<<1)|(x&1);x>>=1;}rev[i]=r;}
+  for(let i=0;i<n/2;i++){cs[i]=Math.cos(2*Math.PI*i/n);sn[i]=-Math.sin(2*Math.PI*i/n);}
+  const fn=(re,im)=>{
+    for(let i=0;i<n;i++){const j=rev[i];if(j>i){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}}
+    for(let size=2;size<=n;size<<=1){
+      const half=size>>1, step=n/size;
+      for(let i=0;i<n;i+=size){
+        for(let j=0,k=0;j<half;j++,k+=step){
+          const a=i+j, b=a+half;
+          const tr=re[b]*cs[k]-im[b]*sn[k], ti=re[b]*sn[k]+im[b]*cs[k];
+          re[b]=re[a]-tr; im[b]=im[a]-ti; re[a]+=tr; im[a]+=ti;
         }
+      }
+    }
+  };
+  fftCache[n]=fn; return fn;
+}
+async function analyze(){
+  if(!cur) return;
+  const my=++analyzeId;
+  const N=+P.fft, frames=+P.frames, data=cur.data, len=data.length, sr=cur.sr;
+  const bins=N/2+1, db=new Float32Array(frames*bins);
+  const fft=getFFT(N), win=new Float64Array(N);
+  let sum=0; for(let i=0;i<N;i++){win[i]=.5-.5*Math.cos(2*Math.PI*i/N);sum+=win[i];}
+  const sc=2/sum, re=new Float64Array(N), im=new Float64Array(N);
+  let mx=-1e9;
+  for(let f=0;f<frames;f++){
+    const center=f*(len-1)/(frames-1), start=Math.round(center-N/2);
+    for(let i=0;i<N;i++){const idx=start+i;re[i]=(idx>=0&&idx<len?data[idx]:0)*win[i];im[i]=0;}
+    fft(re,im);
+    const o=f*bins;
+    for(let b=0;b<bins;b++){
+      const d=20*Math.log10(Math.sqrt(re[b]*re[b]+im[b]*im[b])*sc+1e-10);
+      db[o+b]=d; if(d>mx) mx=d;
+    }
+    if((f%30)===29){
+      busyMsg='analysing '+Math.round(f/frames*100)+'%'; refreshHUD(); await yieldUI();
+      if(my!==analyzeId) return;
+    }
+  }
+  for(let i=0;i<db.length;i++) db[i]-=mx;
+  spec={db,frames,bins,N,sr,mx}; busyMsg='';
+  paintSpec(); draw(); refreshHUD(); refreshStats();
+}
 
-        function stopMic() {
-            running = false;
-            frozen = false;
-            calibrating = false;
-            if (stream) { stream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
-                stream = null; }
-            if (source) { try { source.disconnect(); } catch (e) {} source = null; }
-            analyser = null;
-            peakHeldDb = DB_FLOOR;
-            lastNoteName = '--';
-            lastCents = 0;
-            lastFreq = 0;
-            pitchConfidence = 0;
-            voiceMinPitch = Infinity;
-            voiceMaxPitch = -Infinity;
-            voicePitchHistory = [];
-            resonancePeaks = [];
-            impulseCount = 0;
-            rollingRms = -60;
-            recentImpulses = [];
-            impulseFlash = 0;
-            $('dot').className = 'dot';
-            $('stxt').textContent = 'OFFLINE';
-            $('btnMic').classList.remove('on');
-            $('btnMic').innerHTML = '\u25CF START MIC';
-            $('btnCal').disabled = true;
-            $('btnCal').classList.remove('armed');
-            $('btnCal').textContent = 'CALIBRATE FLOOR';
-            $('btnPeak').disabled = true;
-            $('btnFreeze').disabled = true;
-            $('btnFreeze').classList.remove('armed');
-            $('btnFreeze').textContent = 'FREEZE';
-            updateReadouts(DB_FLOOR, DB_FLOOR);
-            updateModeData();
-            log('Mic stopped.');
-        }
+/* ───────── colour maps ───────── */
+const STOPS={
+ magma:[[0,0,4],[28,16,68],[79,18,123],[129,37,129],[181,54,122],[229,80,100],[251,135,97],[254,194,135],[252,253,191]],
+ inferno:[[0,0,4],[31,12,72],[85,15,109],[136,34,106],[186,54,85],[227,89,51],[249,140,10],[249,201,50],[252,255,164]],
+ gray:[[0,0,0],[255,255,255]]
+};
+function cmapRGB(name,t){
+  const s=STOPS[name], x=t*(s.length-1), i=Math.min(s.length-2,Math.floor(x)), f=x-i;
+  return [s[i][0]+(s[i+1][0]-s[i][0])*f, s[i][1]+(s[i+1][1]-s[i][1])*f, s[i][2]+(s[i+1][2]-s[i][2])*f];
+}
+function makeLUT(){
+  const lut=new Uint32Array(256), gm=+P.vgamma;
+  for(let i=0;i<256;i++){
+    let t=Math.pow(i/255,gm); if(P.cinv) t=1-t;
+    const [r,gg,b]=cmapRGB(P.cmap,t);
+    lut[i]=(0xFF000000|((b|0)<<16)|((gg|0)<<8)|(r|0))>>>0;
+  }
+  return lut;
+}
 
-        function buildSpecBins() {
-            const bins = analyser.frequencyBinCount;
-            const minBin = 1,
-                maxBin = bins - 1;
-            specBins = [];
-            for (let i = 0; i < SPEC_BARS; i++) {
-                const f0 = i / SPEC_BARS,
-                    f1 = (i + 1) / SPEC_BARS;
-                const lo = Math.round(minBin * Math.pow(maxBin / minBin, f0));
-                const hi = Math.max(lo + 1, Math.round(minBin * Math.pow(maxBin / minBin, f1)));
-                specBins.push([lo, hi]);
-            }
-        }
+/* ───────── layout / spectrogram image ───────── */
+function layout(){
+  dpr=Math.min(2,window.devicePixelRatio||1);
+  const r=$('view').getBoundingClientRect();
+  cv.width=Math.max(20,Math.round(r.width*dpr)); cv.height=Math.max(20,Math.round(r.height*dpr));
+  const ml=Math.round(36*dpr), mt=Math.round(18*dpr), mr=Math.round(8*dpr), mb=Math.round(16*dpr);
+  plot={x0:ml,y0:mt,w:cv.width-ml-mr,h:cv.height-mt-mb};
+  paintSpec(); if(live) rebuildLiveCanvas(); draw();
+}
+function viewRange(){
+  const nyq=live?liveSR/2:(cur?cur.sr/2:22050); let lo,hi;
+  if(!live&&P.vfit&&cur&&cur.cfg){
+    const pad=(cur.cfg.fHi-cur.cfg.fLo)*.05;
+    lo=Math.max(0,cur.cfg.fLo-pad); hi=Math.min(nyq,cur.cfg.fHi+pad);
+  }else{lo=+P.vLo;hi=+P.vHi;}
+  if(P.vscale==='log') lo=Math.max(lo,20);
+  if(hi<=lo+50) hi=lo+50;
+  return [lo,hi];
+}
+function freqAtFrac(fr,fa,fb){ return P.vscale==='log'?fa*Math.pow(fb/fa,fr):fa+(fb-fa)*fr; }
+function schedulePaint(){
+  if(paintQ) return;
+  paintQ=requestAnimationFrame(()=>{paintQ=0;paintSpec();if(live)paintLiveFull();draw();});
+}
+function paintSpec(){
+  if(!spec||!plot||plot.w<2||plot.h<2){specCv=null;return;}
+  const w=plot.w,h=plot.h;
+  if(!specCv) specCv=document.createElement('canvas');
+  specCv.width=w; specCv.height=h;
+  const sx=specCv.getContext('2d'), img=sx.createImageData(w,h), u=new Uint32Array(img.data.buffer);
+  const [fa,fb]=viewRange(), nyq=spec.sr/2, {db,frames,bins}=spec;
+  const rb0=new Int32Array(h), rbw=new Float32Array(h), rok=new Uint8Array(h);
+  for(let y=0;y<h;y++){
+    const f=freqAtFrac(1-y/(h-1),fa,fb);
+    if(f<0||f>nyq){rok[y]=0;continue;}
+    rok[y]=1; const bp=f/nyq*(bins-1); let b0=Math.floor(bp); if(b0>bins-2) b0=bins-2;
+    rb0[y]=b0; rbw[y]=bp-b0;
+  }
+  const cf0=new Int32Array(w), cfw=new Float32Array(w);
+  for(let x=0;x<w;x++){
+    const fp=x/(w-1)*(frames-1); let f0=Math.floor(fp); if(f0>frames-2) f0=frames-2;
+    cf0[x]=f0; cfw[x]=fp-f0;
+  }
+  const rng=+P.vrange, lut=makeLUT(), black=0xFF000000>>>0;
+  for(let y=0;y<h;y++){
+    const o=y*w;
+    if(!rok[y]){for(let x=0;x<w;x++)u[o+x]=black;continue;}
+    const b0=rb0[y], bw=rbw[y], bw1=1-bw;
+    for(let x=0;x<w;x++){
+      const i0=cf0[x]*bins+b0, fw=cfw[x];
+      const v=(db[i0]*bw1+db[i0+1]*bw)*(1-fw)+(db[i0+bins]*bw1+db[i0+bins+1]*bw)*fw;
+      const t=(v+rng)/rng;
+      u[o+x]=lut[t<=0?0:t>=1?255:(t*255)|0];
+    }
+  }
+  sx.putImageData(img,0,0);
+}
 
-        // ===========================================================================
-        // METERING MATH
-        // ===========================================================================
-        function rmsDb(buf) {
-            let sum = 0;
-            for (let i = 0; i < buf.length; i++) { const s = buf[i];
-                sum += s * s; }
-            const rms = Math.sqrt(sum / buf.length);
-            return rms > 1e-7 ? 20 * Math.log10(rms) : DB_FLOOR;
-        }
+/* ───────── drawing ───────── */
+function niceStep(x){const p=Math.pow(10,Math.floor(Math.log10(x))),m=x/p;return(m<1.5?1:m<3.5?2:m<7.5?5:10)*p;}
+function fmtHz(f){return f>=1000?(+(f/1000).toFixed(2))+'k':String(Math.round(f));}
+function draw(){
+  if(!plot) return;
+  const W=cv.width,H=cv.height,{x0,y0,w,h}=plot;
+  g.setTransform(1,0,0,1,0,0);
+  g.fillStyle='#0d0c11'; g.fillRect(0,0,W,H);
+  g.fillStyle='#000'; g.fillRect(x0,y0,w,h);
+  const dur=live?liveDur():(cur?cur.dur:1);
+  if(live){
+    if(lcv) g.drawImage(lcv,0,0,lcv.width,lcv.height,x0,y0,w,h);
+  }else if(specCv){
+    const fr=(playing&&P.reveal)?Math.min(1,pos/dur):1, sw=Math.round(w*fr);
+    if(sw>0) g.drawImage(specCv,0,0,sw,h,x0,y0,sw,h);
+  }
+  if(cur||live){
+    const fs=Math.round(9*dpr);
+    g.font=fs+'px ui-monospace,Menlo,monospace';
+    g.fillStyle='#7d7689'; g.strokeStyle='rgba(212,165,116,.15)'; g.lineWidth=1;
+    const [fa,fb]=viewRange(), log=P.vscale==='log';
+    const ticks=[];
+    if(log){
+      for(let p=Math.floor(Math.log10(fa));p<=Math.ceil(Math.log10(fb));p++) for(const m of [1,2,5]){const f=m*Math.pow(10,p);if(f>=fa&&f<=fb)ticks.push(f);}
+    }else{
+      const step=niceStep((fb-fa)/Math.max(2,h/(26*dpr)));
+      for(let f=Math.ceil(fa/step)*step;f<=fb+1e-6;f+=step) ticks.push(f);
+    }
+    g.textAlign='right'; g.textBaseline='middle';
+    for(const f of ticks){
+      const fr=log?Math.log(f/fa)/Math.log(fb/fa):(f-fa)/(fb-fa), y=Math.round(y0+(1-fr)*(h-1))+.5;
+      g.fillText(fmtHz(f),x0-4*dpr,y);
+      g.beginPath(); g.moveTo(x0-3*dpr,y); g.lineTo(P.grid?x0+w:x0,y); g.stroke();
+    }
+    g.textAlign='center'; g.textBaseline='top';
+    const ts=niceStep(dur/Math.max(2,w/(56*dpr)));
+    for(let t=0;t<=dur+1e-6;t+=ts){
+      const x=Math.round(x0+t/dur*(w-1))+.5;
+      const lab=live?t-dur:t;
+      g.fillText(ts<1?lab.toFixed(1):String(Math.round(lab*100)/100),x,y0+h+3*dpr);
+      g.beginPath(); g.moveTo(x,P.grid?y0:y0+h); g.lineTo(x,y0+h+2*dpr); g.stroke();
+    }
+  }
+  g.strokeStyle='#2a2633'; g.lineWidth=1; g.strokeRect(x0+.5,y0+.5,w-1,h-1);
+  if(!live&&cur&&(playing||pos>0)){
+    const x=Math.round(x0+Math.min(1,pos/dur)*(w-1))+.5;
+    g.strokeStyle='#d4a574'; g.beginPath(); g.moveTo(x,y0); g.lineTo(x,y0+h); g.stroke();
+  }
+  if(curs.on){
+    g.strokeStyle='rgba(201,195,209,.35)';
+    g.beginPath(); g.moveTo(curs.x+.5,y0); g.lineTo(curs.x+.5,y0+h); g.moveTo(x0,curs.y+.5); g.lineTo(x0+w,curs.y+.5); g.stroke();
+  }
+}
 
-        function peakDb(buf) {
-            let mx = 0;
-            for (let i = 0; i < buf.length; i++) { const a = Math.abs(buf[i]); if (a > mx) mx = a; }
-            return mx > 1e-7 ? 20 * Math.log10(mx) : DB_FLOOR;
-        }
-        const meterPos = db => clamp((db - METER_MIN) / (METER_MAX - METER_MIN), 0, 1);
+/* ───────── HUD ───────── */
+function setHudWarn(s){ $('hud').innerHTML=''; const w=document.createElement('span'); w.className='w'; w.textContent=s; $('hud').appendChild(w); }
+function refreshHUD(){
+  const hud=$('hud'); hud.innerHTML='';
+  const a=document.createElement('span'), b=document.createElement('span'); b.className='w';
+  hud.append(a,b);
+  if(busyMsg){a.textContent=busyMsg;return;}
+  if(live){liveHud(a,b);return;}
+  if(!cur){a.textContent='press Encode';return;}
+  if(curs.on&&spec&&plot){
+    const rd=readout(); a.textContent=rd; return;
+  }
+  if(cur.encoded){
+    const c=cur.cfg, sr=cur.sr, N=+P.fft;
+    const dfMin=c.fscale==='log'
+      ? c.fLo*(Math.pow(c.fHi/c.fLo,1/Math.max(1,c.R-1))-1)
+      : (c.fHi-c.fLo)/Math.max(1,c.R-1);
+    const bin=sr/N, win=N/sr*1000, dt=c.dur/c.Cc*1000;
+    a.textContent=c.dur.toFixed(1)+'s · '+c.R+'×'+c.Cc+' · Δf '+Math.round(dfMin)+' · bin '+bin.toFixed(0)+' Hz · win '+win.toFixed(0)+' · Δt '+dt.toFixed(0)+' ms';
+    const warn=[];
+    if(dfMin<bin*1.4) warn.push('tones blur: raise FFT');
+    if(dt<win*.75) warn.push('columns blur: lower FFT');
+    if(stale) warn.push('changed: Encode');
+    if(warn.length) b.textContent=' · '+warn.join(' · ');
+  }else{
+    a.textContent=cur.name+' · '+cur.dur.toFixed(1)+' s · '+cur.sr+' Hz';
+  }
+}
+function readout(){
+  const {x0,y0,w,h}=plot, dur=cur.dur;
+  const tx=Math.max(0,Math.min(1,(curs.x-x0)/(w-1))), t=tx*dur;
+  const fr=Math.max(0,Math.min(1,1-(curs.y-y0)/(h-1)));
+  const [fa,fb]=viewRange(), f=freqAtFrac(fr,fa,fb);
+  let s='t '+t.toFixed(2)+' s · '+Math.round(f)+' Hz';
+  if(spec){
+    const fi=Math.round(tx*(spec.frames-1)), bi=Math.round(f/(spec.sr/2)*(spec.bins-1));
+    if(bi>=0&&bi<spec.bins) s+=' · '+spec.db[fi*spec.bins+bi].toFixed(0)+' dB';
+  }
+  return s;
+}
+function updateTime(){ $('tm').textContent=(cur?pos.toFixed(1)+' / '+cur.dur.toFixed(1):'0.0 / 0.0')+' s'; }
 
-        function heat(db) {
-            if (floorDb !== null) return clamp((db - floorDb) / 42, 0, 1);
-            return clamp((db - METER_MIN) / (METER_MAX - METER_MIN), 0, 1);
-        }
-        const fmtDb = db => (db <= DB_FLOOR + 0.5) ? '\u2212\u221E' : (db > 0 ? '+' : '\u2212') + Math.abs(db).toFixed(1);
+/* ───────── playback ───────── */
+function ensureCtx(){
+  if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended') actx.resume();
+}
+function getBuf(){
+  if(cur.buf) return cur.buf;
+  if(!cur._ab){const b=actx.createBuffer(1,cur.data.length,cur.sr);b.copyToChannel(cur.data,0);cur._ab=b;}
+  return cur._ab;
+}
+function stopSource(){
+  if(curSrc){curSrc.onended=null;try{curSrc.stop();}catch(e){}try{curSrc.disconnect();}catch(e){}curSrc=null;}
+}
+function startPlay(offset){
+  if(!cur) return;
+  ensureCtx(); stopSource();
+  const s=actx.createBufferSource(); s.buffer=getBuf(); s.connect(actx.destination);
+  s.onended=()=>{ if(s===curSrc&&playing){ endPlay(); } };
+  curSrc=s; s.start(0,Math.max(0,Math.min(offset,cur.dur-.01)));
+  startAt=actx.currentTime-offset; pos=offset; playing=true;
+  $('bPlay').textContent='Pause';
+  cancelAnimationFrame(rafId); rafId=requestAnimationFrame(tick);
+}
+function tick(){
+  if(!playing) return;
+  if(!scrub) pos=actx.currentTime-startAt;
+  if(pos>=cur.dur){endPlay();return;}
+  draw(); updateTime(); rafId=requestAnimationFrame(tick);
+}
+function endPlay(){
+  stopSource(); playing=false; pos=0; $('bPlay').textContent='Play';
+  cancelAnimationFrame(rafId); updateTime(); draw();
+}
+function stopPlay(reset){
+  if(playing&&!reset) pos=actx.currentTime-startAt;
+  stopSource(); playing=false; $('bPlay').textContent='Play';
+  cancelAnimationFrame(rafId);
+  if(reset) pos=0;
+  updateTime(); draw();
+}
+$('bPlay').addEventListener('click',()=>{
+  if(!cur||live) return;
+  if(playing) stopPlay(false); else startPlay(pos>=cur.dur-.05?0:pos);
+});
+$('bEnc').addEventListener('click',()=>encode());
+$('auto').addEventListener('change',()=>{ if($('auto').checked&&stale) markStale(); });
 
-        // ===========================================================================
-        // NOTE / PITCH MATH
-        // ===========================================================================
-        const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+/* ───────── pointer: seek + readout ───────── */
+function ptr(e){
+  const r=cv.getBoundingClientRect(), s=cv.width/r.width;
+  curs.x=(e.clientX-r.left)*s; curs.y=(e.clientY-r.top)*s;
+  const {x0,y0,w,h}=plot;
+  curs.x=Math.max(x0,Math.min(x0+w-1,curs.x)); curs.y=Math.max(y0,Math.min(y0+h-1,curs.y));
+}
+function seekFromCursor(){
+  if(!cur||live) return;
+  const {x0,w}=plot; pos=Math.max(0,Math.min(1,(curs.x-x0)/(w-1)))*cur.dur;
+  updateTime();
+}
+cv.addEventListener('pointerdown',e=>{
+  if(!plot||(!cur&&!live)) return;
+  cv.setPointerCapture(e.pointerId); curs.on=true; scrub=true; ptr(e); seekFromCursor(); refreshHUD(); draw();
+});
+cv.addEventListener('pointermove',e=>{
+  if(!curs.on) return; ptr(e); seekFromCursor(); refreshHUD(); draw();
+});
+function pend(){
+  if(!curs.on) return; curs.on=false; scrub=false;
+  if(playing) startPlay(pos);
+  refreshHUD(); draw();
+}
+cv.addEventListener('pointerup',pend);
+cv.addEventListener('pointercancel',pend);
 
-        function frequencyToNote(freq) {
-            if (freq <= 0) return { note: '--', octave: 0, cents: 0, name: '--', nearestFreq: 0 };
-            const midiNote = 69 + 12 * Math.log2(freq / 440);
-            const rounded = Math.round(midiNote);
-            const cents = Math.round((midiNote - rounded) * 100);
-            const octave = Math.floor(rounded / 12) - 1;
-            const noteIndex = ((rounded % 12) + 12) % 12;
-            const noteName = NOTE_NAMES[noteIndex] + octave;
-            const nearestFreq = 440 * Math.pow(2, (rounded - 69) / 12);
-            return { note: NOTE_NAMES[noteIndex], octave, cents, name: noteName, nearestFreq };
-        }
+/* ───────── file I/O ───────── */
+$('fImg').addEventListener('change',e=>{const f=e.target.files[0];if(f)loadImageFile(f);e.target.value='';});
+$('fAud').addEventListener('change',async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  try{
+    if(live) await stopMic();
+    ensureCtx(); stopPlay(true); busyMsg='decoding…'; refreshHUD();
+    const ab=await f.arrayBuffer();
+    const buf=await new Promise((res,rej)=>{const p=actx.decodeAudioData(ab,res,rej);if(p&&p.then)p.then(res,rej);});
+    const n=buf.length, data=new Float32Array(n), chs=buf.numberOfChannels;
+    for(let c=0;c<chs;c++){const ch=buf.getChannelData(c);for(let i=0;i<n;i++)data[i]+=ch[i]/chs;}
+    cur={data,sr:buf.sampleRate,dur:buf.duration,buf,name:f.name,encoded:false};
+    pos=0; $('srcname').textContent=f.name;
+    setParam('vfit',false); setParam('vLo',0); setParam('vHi',Math.min(10000,buf.sampleRate/2));
+    updateTime(); await analyze();
+  }catch(err){busyMsg='';setHudWarn('could not decode that file (try mp3, m4a, wav or a screen recording)');}
+});
+function dl(blob,name){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);
+}
+function saveWav(){
+  if(live){setHudWarn('stop the mic to save');return;}
+  if(!cur) return;
+  const d=cur.data, n=d.length, buf=new ArrayBuffer(44+n*2), dv=new DataView(buf);
+  const ws=(o,s)=>{for(let i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i));};
+  ws(0,'RIFF'); dv.setUint32(4,36+n*2,true); ws(8,'WAVE'); ws(12,'fmt '); dv.setUint32(16,16,true);
+  dv.setUint16(20,1,true); dv.setUint16(22,1,true); dv.setUint32(24,cur.sr,true); dv.setUint32(28,cur.sr*2,true);
+  dv.setUint16(32,2,true); dv.setUint16(34,16,true); ws(36,'data'); dv.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++){const s=Math.max(-1,Math.min(1,d[i]));dv.setInt16(44+i*2,s<0?s*0x8000:s*0x7fff,true);}
+  dl(new Blob([buf],{type:'audio/wav'}),'spectro_art.wav');
+}
+function savePng(){
+  const was=curs.on; curs.on=false; draw();
+  cv.toBlob(b=>{ if(b) dl(b,'spectro_art.png'); curs.on=was; });
+}
 
-        function detectPitch(buffer, sampleRate, minFreq, maxFreq) {
-            const n = buffer.length;
-            const minLag = Math.max(1, Math.floor(sampleRate / maxFreq));
-            const maxLag = Math.min(n - 1, Math.floor(sampleRate / minFreq));
-            if (minLag >= maxLag) return null;
-            let bestCorr = -Infinity;
-            let bestLag = minLag;
-            // compute zero-lag energy for normalization
-            let energy0 = 0;
-            for (let i = 0; i < n; i++) energy0 += buffer[i] * buffer[i];
-            if (energy0 < 1e-12) return null;
-            // search lags
-            const step = Math.max(1, Math.floor((maxLag - minLag) / 300));
-            for (let lag = minLag; lag <= maxLag; lag += step) {
-                let sum = 0;
-                const m = n - lag;
-                for (let i = 0; i < m; i++) sum += buffer[i] * buffer[i + lag];
-                // normalize by geometric mean of energies
-                let e1 = 0,
-                    e2 = 0;
-                for (let i = 0; i < m; i++) { e1 += buffer[i] * buffer[i];
-                    e2 += buffer[i + lag] * buffer[i + lag]; }
-                const denom = Math.sqrt(e1 * e2) + 1e-12;
-                const corr = sum / denom;
-                if (corr > bestCorr) { bestCorr = corr;
-                    bestLag = lag; }
-            }
-            // refine around best lag
-            const fineStart = Math.max(minLag, bestLag - step);
-            const fineEnd = Math.min(maxLag, bestLag + step);
-            bestCorr = -Infinity;
-            for (let lag = fineStart; lag <= fineEnd; lag++) {
-                let sum = 0;
-                const m = n - lag;
-                for (let i = 0; i < m; i++) sum += buffer[i] * buffer[i + lag];
-                let e1 = 0,
-                    e2 = 0;
-                for (let i = 0; i < m; i++) { e1 += buffer[i] * buffer[i];
-                    e2 += buffer[i + lag] * buffer[i + lag]; }
-                const denom = Math.sqrt(e1 * e2) + 1e-12;
-                const corr = sum / denom;
-                if (corr > bestCorr) { bestCorr = corr;
-                    bestLag = lag; }
-            }
-            if (bestCorr < 0.4) return null; // low confidence
-            const freq = sampleRate / bestLag;
-            if (freq < minFreq || freq > maxFreq) return null;
-            return { frequency: freq, confidence: bestCorr, lag: bestLag };
-        }
+/* ───────── live mic ───────── */
+let live=false, micBusy=false, liveSR=44100, micStream=null, micSrc=null, micNode=null, micSink=null, workletReady=false;
+let recChunks=[], recLen=0, recFull=false;
+const RMASK=32767, fring=new Float32Array(RMASK+1);
+let totalW=0, nextEnd=0, hopS=1323, sring=new Float32Array(88200);
+let lN=2048, lbins=1025, lcols=0, lhead=0, lframes=0, lhist=null, lre=null, lim=null, lfft=null, lwinArr=null, lsc=1;
+let lcv=null, lctx=null, lcolImg=null, lmap=null, lutL=null, lavgP=null, lprev=null, lminBin=1;
+const lInfo={f:0,db:-120,cent:0,clip:0,clipAt:-1e9};
+let liveRaf=0, lastDraw=0, lastHud=0, lastStat=0, lastStats=null;
+const NOTES=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+const dbf=(v,d=0)=>v>1e-7?(20*Math.log10(v)).toFixed(d):'−∞';
+function noteOf(f){
+  if(!(f>0)) return '—';
+  const m=69+12*Math.log2(f/440), r=Math.round(m), c=Math.round((m-r)*100);
+  return NOTES[((r%12)+12)%12]+(Math.floor(r/12)-1)+' '+(c>=0?'+':'')+c+'¢';
+}
+function liveDur(){ return lcols*hopS/liveSR; }
 
-        // ===========================================================================
-        // PEAK DETECTION (for resonance mode)
-        // ===========================================================================
-        function findSpectralPeaks(freqData, sampleRate, fftSize, maxPeaks) {
-            const bins = freqData.length;
-            const peaks = [];
-            for (let i = 2; i < bins - 2; i++) {
-                const v = freqData[i];
-                if (v < 20) continue; // ignore very quiet bins
-                if (v > freqData[i - 1] && v > freqData[i - 2] && v > freqData[i + 1] && v > freqData[i + 2]) {
-                    const freq = i * sampleRate / fftSize;
-                    peaks.push({ bin: i, frequency: freq, magnitude: v });
-                }
-            }
-            peaks.sort((a, b) => b.magnitude - a.magnitude);
-            const filtered = [];
-            for (const p of peaks) {
-                let tooClose = false;
-                for (const f of filtered) {
-                    if (Math.abs(p.frequency - f.frequency) < Math.max(p.frequency * 0.05, 20)) { tooClose = true; break; }
-                }
-                if (!tooClose) filtered.push(p);
-                if (filtered.length >= maxPeaks) break;
-            }
-            return filtered;
-        }
+function micErr(e){
+  const n=e&&e.name||'error';
+  if(n==='NotAllowedError'||n==='SecurityError') return 'mic blocked: allow microphone access for this page';
+  if(n==='NotFoundError'||n==='OverconstrainedError') return 'no matching microphone found';
+  return 'mic error: '+n;
+}
+async function attachCapture(){
+  micSink=actx.createGain(); micSink.gain.value=0; micSink.connect(actx.destination);
+  if(actx.audioWorklet&&window.AudioWorkletNode){
+    try{
+      if(!workletReady){
+        const code="class Cap extends AudioWorkletProcessor{constructor(){super();this.b=new Float32Array(1024);this.n=0;}"+
+          "process(i){const c=i[0]&&i[0][0];if(c){for(let k=0;k<c.length;k++){this.b[this.n++]=c[k];"+
+          "if(this.n===1024){this.port.postMessage(this.b.slice(0));this.n=0;}}}return true;}}"+
+          "registerProcessor('cap',Cap);";
+        const url=URL.createObjectURL(new Blob([code],{type:'application/javascript'}));
+        await actx.audioWorklet.addModule(url); URL.revokeObjectURL(url); workletReady=true;
+      }
+      micNode=new AudioWorkletNode(actx,'cap',{numberOfInputs:1,numberOfOutputs:1,channelCount:1});
+      micNode.port.onmessage=e=>onChunk(e.data);
+      micSrc.connect(micNode); micNode.connect(micSink);
+      return;
+    }catch(e){ micNode=null; }
+  }
+  const sp=actx.createScriptProcessor(2048,1,1);
+  sp.onaudioprocess=e=>onChunk(new Float32Array(e.inputBuffer.getChannelData(0)));
+  micSrc.connect(sp); sp.connect(micSink); micNode=sp;
+}
+async function openStream(){
+  const a={echoCancellation:!P.lraw,noiseSuppression:!P.lraw,autoGainControl:!P.lraw};
+  const d=$('mdev').value; if(d) a.deviceId={exact:d};
+  micStream=await navigator.mediaDevices.getUserMedia({audio:a});
+  micSrc=actx.createMediaStreamSource(micStream);
+  await attachCapture();
+}
+function closeStream(){
+  try{ if(micNode){ if(micNode.port) micNode.port.onmessage=null; else micNode.onaudioprocess=null; micNode.disconnect(); } }catch(e){}
+  try{ if(micSrc) micSrc.disconnect(); }catch(e){}
+  try{ if(micSink) micSink.disconnect(); }catch(e){}
+  if(micStream) for(const t of micStream.getTracks()) t.stop();
+  micNode=micSrc=micSink=micStream=null;
+}
+async function listDevices(){
+  try{
+    const ds=await navigator.mediaDevices.enumerateDevices(), sel=$('mdev'), keep=sel.value;
+    sel.innerHTML=''; const d0=document.createElement('option'); d0.value=''; d0.textContent='Default'; sel.appendChild(d0);
+    let n=0;
+    for(const d of ds){ if(d.kind!=='audioinput') continue; n++;
+      const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||('Input '+n); sel.appendChild(o); }
+    if([...sel.options].some(o=>o.value===keep)) sel.value=keep;
+  }catch(e){}
+}
+async function startMic(){
+  if(live||micBusy) return;
+  if(busy){setHudWarn('wait for the encode to finish');return;}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){setHudWarn('mic needs https or localhost');return;}
+  micBusy=true;
+  try{
+    ensureCtx(); stopPlay(true);
+    liveSR=actx.sampleRate;
+    recChunks=[]; recLen=0; recFull=false; totalW=0; fring.fill(0);
+    sring=new Float32Array(Math.round(liveSR*2));
+    lInfo.f=0; lInfo.db=-120; lInfo.cent=0; lInfo.clip=0; lInfo.clipAt=-1e9;
+    await openStream();
+    live=true; analyzeId++; busyMsg='';
+    setParam('vfit',false);
+    reconfigureLive();
+    const bm=$('bMic'); bm.textContent='Stop mic'; bm.classList.add('p');
+    $('bPlay').disabled=true; $('bEnc').disabled=true;
+    $('srcname').textContent='live mic';
+    listDevices();
+    cancelAnimationFrame(liveRaf); liveRaf=requestAnimationFrame(liveTick);
+  }catch(e){ closeStream(); live=false; setHudWarn(micErr(e)); }
+  micBusy=false;
+}
+async function reacquire(){
+  if(!live||micBusy) return; micBusy=true;
+  try{ closeStream(); await openStream(); }
+  catch(e){ micBusy=false; await stopMic(); setHudWarn(micErr(e)); return; }
+  micBusy=false;
+}
+async function stopMic(){
+  if(!live) return;
+  live=false; cancelAnimationFrame(liveRaf);
+  const sr=liveSR, chunks=recChunks, len=recLen;
+  closeStream(); recChunks=[];
+  const bm=$('bMic'); bm.textContent='Mic'; bm.classList.remove('p');
+  $('bPlay').disabled=false; if(!busy) $('bEnc').disabled=false;
+  if(len>=0.3*sr){
+    const data=new Float32Array(len); let o=0;
+    for(const c of chunks){data.set(c,o);o+=c.length;}
+    cur={data,sr,dur:len/sr,name:'mic recording',encoded:false};
+    pos=0; $('srcname').textContent='mic recording'; updateTime();
+    await analyze();
+  }else{
+    $('srcname').textContent=cur?(cur.name||''):'';
+    paintSpec(); draw(); refreshHUD(); refreshStats();
+  }
+}
+function liveParamChanged(k){
+  if(!live) return;
+  if(k==='lraw') reacquire(); else reconfigureLive();
+}
+function reconfigureLive(){
+  lN=+P.fft; lbins=lN/2+1;
+  hopS=Math.max(64,Math.round(P.lhop/1000*liveSR));
+  lcols=Math.max(50,Math.min(1500,Math.round(P.lwin*1000/P.lhop)));
+  while(lcols*lbins>8e6&&lcols>50) lcols=Math.floor(lcols*.8);
+  lhist=new Float32Array(lcols*lbins).fill(-200); lhead=0; lframes=0;
+  lre=new Float64Array(lN); lim=new Float64Array(lN); lfft=getFFT(lN);
+  lwinArr=new Float64Array(lN); let sm=0;
+  for(let i=0;i<lN;i++){lwinArr[i]=.5-.5*Math.cos(2*Math.PI*i/lN);sm+=lwinArr[i];}
+  lsc=2/sm; lavgP=new Float64Array(lbins); lprev=new Float32Array(lbins).fill(-120);
+  lminBin=Math.max(1,Math.ceil(20/(liveSR/lN)));
+  nextEnd=Math.max(lN,totalW);
+  rebuildLiveCanvas();
+}
+function rebuildLiveCanvas(){
+  if(!live||!plot) return;
+  lcv=document.createElement('canvas'); lcv.width=lcols; lcv.height=Math.max(2,plot.h);
+  lctx=lcv.getContext('2d'); lcolImg=lctx.createImageData(1,lcv.height); lmap=null;
+  paintLiveFull();
+}
+function buildMap(h){
+  const [fa,fb]=viewRange(), nyq=liveSR/2, bins=lbins;
+  const b0=new Int32Array(h), bw=new Float32Array(h), ok=new Uint8Array(h);
+  for(let y=0;y<h;y++){
+    const f=freqAtFrac(1-y/(h-1),fa,fb);
+    if(f<0||f>nyq){ok[y]=0;continue;}
+    ok[y]=1; const bp=f/nyq*(bins-1); let k=Math.floor(bp); if(k>bins-2)k=bins-2;
+    b0[y]=k; bw[y]=bp-k;
+  }
+  return {b0,bw,ok};
+}
+function paintLiveFull(){
+  if(!live||!lcv||!lhist) return;
+  const w=lcols, h=lcv.height;
+  lmap=buildMap(h); lutL=makeLUT();
+  const img=lctx.createImageData(w,h), u=new Uint32Array(img.data.buffer);
+  const rng=+P.vrange, lo=+P.lceil-rng, black=0xFF000000>>>0, {b0,bw,ok}=lmap;
+  for(let c=0;c<w;c++){
+    const have=(w-c)<=lframes, row=((lhead+c)%lcols)*lbins;
+    for(let y=0;y<h;y++){
+      if(!have||!ok[y]){u[y*w+c]=black;continue;}
+      const k=row+b0[y], v=lhist[k]*(1-bw[y])+lhist[k+1]*bw[y], t=(v-lo)/rng;
+      u[y*w+c]=lutL[t<=0?0:t>=1?255:(t*255)|0];
+    }
+  }
+  lctx.putImageData(img,0,0);
+}
+function paintLiveCol(row){
+  const h=lcv.height;
+  if(!lmap||!lutL){lmap=buildMap(h);lutL=makeLUT();}
+  const u=new Uint32Array(lcolImg.data.buffer), {b0,bw,ok}=lmap;
+  const rng=+P.vrange, lo=+P.lceil-rng, black=0xFF000000>>>0;
+  for(let y=0;y<h;y++){
+    if(!ok[y]){u[y]=black;continue;}
+    const k=row+b0[y], v=lhist[k]*(1-bw[y])+lhist[k+1]*bw[y], t=(v-lo)/rng;
+    u[y]=lutL[t<=0?0:t>=1?255:(t*255)|0];
+  }
+  lctx.drawImage(lcv,-1,0); lctx.putImageData(lcolImg,lcols-1,0);
+}
+function onChunk(buf){
+  if(!live) return;
+  const n=buf.length, SM=sring.length;
+  if(!recFull){ if(recLen+n<=P.lmax*liveSR){recChunks.push(buf);recLen+=n;} else recFull=true; }
+  let clip=0;
+  for(let i=0;i<n;i++){
+    const v=buf[i], a=v<0?-v:v;
+    fring[(totalW+i)&RMASK]=v; sring[(totalW+i)%SM]=v;
+    if(a>=0.999) clip++;
+  }
+  totalW+=n;
+  if(clip){lInfo.clip+=clip;lInfo.clipAt=performance.now();}
+  while(nextEnd<=totalW){
+    if(!P.lfreeze) liveFrame(nextEnd);
+    nextEnd+=hopS;
+    if(totalW-nextEnd>liveSR) nextEnd=totalW;
+  }
+}
+function liveFrame(e){
+  const N=lN, bins=lbins, sc=lsc*lsc, sm=+P.lsmooth, row=lhead*bins;
+  for(let i=0;i<N;i++){lre[i]=fring[(e-N+i)&RMASK]*lwinArr[i];lim[i]=0;}
+  lfft(lre,lim);
+  let pk=-1e9, pkb=0, sumP=0, sumKP=0;
+  for(let b=0;b<bins;b++){
+    const p2=(lre[b]*lre[b]+lim[b]*lim[b])*sc;
+    sumP+=p2; sumKP+=b*p2;
+    let d=10*Math.log10(p2+1e-18);
+    if(sm>0) d=sm*lprev[b]+(1-sm)*d;
+    lprev[b]=d; lhist[row+b]=d;
+    lavgP[b]=lavgP[b]*.9+p2*.1;
+    if(b>=lminBin&&d>pk){pk=d;pkb=b;}
+  }
+  let f=0;
+  if(pk>-100){
+    let dl=0;
+    if(pkb>0&&pkb<bins-1){
+      const y0=lhist[row+pkb-1], y2=lhist[row+pkb+1], den=y0-2*pk+y2;
+      if(den!==0) dl=Math.max(-1,Math.min(1,.5*(y0-y2)/den));
+    }
+    f=(pkb+dl)*liveSR/N;
+  }
+  lInfo.f=f; lInfo.db=pk; lInfo.cent=sumP>0?sumKP/sumP*liveSR/N:0;
+  if(lcv) paintLiveCol(row);
+  lhead=(lhead+1)%lcols; if(lframes<lcols) lframes++;
+}
+function liveTick(ts){
+  if(!live) return;
+  if(ts-lastDraw>=33){lastDraw=ts;draw();}
+  if(ts-lastHud>=120){lastHud=ts;refreshHUD();}
+  if(ts-lastStat>=500&&$('pane_stats').classList.contains('on')){lastStat=ts;refreshStats();}
+  liveRaf=requestAnimationFrame(liveTick);
+}
+function lastSamples(){
+  const SM=sring.length, n=Math.min(SM,totalW), x=new Float32Array(n);
+  for(let i=0;i<n;i++) x[i]=sring[(totalW-n+i)%SM];
+  return x;
+}
+function levelsOf(x,sr){
+  const n=x.length; if(!n) return {pk:0,rms:0,dc:0,clip:0,zcr:0};
+  let pk=0,ss=0,sum=0,clip=0,zc=0,prev=x[0]>=0;
+  for(let i=0;i<n;i++){
+    const v=x[i], a=v<0?-v:v;
+    if(a>pk)pk=a; ss+=v*v; sum+=v; if(a>=0.999)clip++;
+    const sgn=v>=0; if(sgn!==prev){zc++;prev=sgn;}
+  }
+  return {pk,rms:Math.sqrt(ss/n),dc:sum/n,clip,zcr:zc/(n/sr)/2};
+}
+function liveReadout(){
+  const {x0,y0,w,h}=plot, xf=Math.max(0,Math.min(1,(curs.x-x0)/(w-1)));
+  const fr=Math.max(0,Math.min(1,1-(curs.y-y0)/(h-1))), [fa,fb]=viewRange(), f=freqAtFrac(fr,fa,fb);
+  let s=(-(1-xf)*liveDur()).toFixed(2)+' s · '+Math.round(f)+' Hz';
+  const ci=Math.round(xf*(lcols-1)), have=(lcols-ci)<=lframes, bi=Math.round(f/(liveSR/2)*(lbins-1));
+  if(have&&bi>=0&&bi<lbins) s+=' · '+lhist[((lhead+ci)%lcols)*lbins+bi].toFixed(0)+' dB';
+  return s;
+}
+function liveHud(a,b){
+  if(curs.on&&plot&&lframes){a.textContent=liveReadout();return;}
+  const lv=levelsOf(lastSamples(),liveSR), parts=[];
+  parts.push(lInfo.f>0&&lInfo.db>-80?noteOf(lInfo.f)+'  '+lInfo.f.toFixed(1)+' Hz  '+lInfo.db.toFixed(0)+' dB':'—');
+  parts.push('rms '+dbf(lv.rms)+' pk '+dbf(lv.pk));
+  parts.push('rec '+(recLen/liveSR).toFixed(1)+'s');
+  parts.push('ctr '+fmtHz(lInfo.cent));
+  a.textContent=parts.join(' · ');
+  const w=[];
+  if(performance.now()-lInfo.clipAt<2000) w.push('CLIP');
+  if(recFull) w.push('rec full');
+  if(P.lfreeze) w.push('frozen');
+  if(w.length) b.textContent=' · '+w.join(' · ');
+}
+$('bMic').addEventListener('click',()=>{ if(live) stopMic(); else startMic(); });
+window.addEventListener('pagehide',()=>{ closeStream(); });
 
-        function findHarmonics(peaks, tolerance) {
-            if (peaks.length < 2) return peaks.map(p => ({ ...p, harmonic: null, ratio: null }));
-            const fundamental = peaks[0].frequency;
-            return peaks.map(p => {
-                const ratio = p.frequency / fundamental;
-                const nearestInt = Math.round(ratio);
-                const isHarmonic = Math.abs(ratio - nearestInt) < tolerance;
-                return { ...p, harmonic: isHarmonic ? nearestInt : null, ratio: ratio };
-            });
-        }
+/* ───────── analysis: stats, peaks, average spectrum ───────── */
+function findPeaks(avgP,sr,N,maxN){
+  const bins=avgP.length, dbA=new Float32Array(bins); let mx=-1e9;
+  for(let b=0;b<bins;b++){ dbA[b]=10*Math.log10(avgP[b]+1e-18); if(b>=1&&dbA[b]>mx) mx=dbA[b]; }
+  const cand=[];
+  for(let b=2;b<bins-2;b++){
+    if(dbA[b]>mx-45&&dbA[b]>=dbA[b-1]&&dbA[b]>dbA[b+1]&&dbA[b]>=dbA[b-2]&&dbA[b]>dbA[b+2]) cand.push(b);
+  }
+  cand.sort((x,y)=>dbA[y]-dbA[x]);
+  const out=[], binHz=sr/N;
+  for(const b of cand){
+    const f0=b*binHz;
+    if(out.some(q=>Math.abs(q.f-f0)<Math.max(3*binHz,.015*f0))) continue;
+    const y0=dbA[b-1], y1=dbA[b], y2=dbA[b+1], den=y0-2*y1+y2;
+    const d=den!==0?Math.max(-1,Math.min(1,.5*(y0-y2)/den)):0;
+    out.push({f:(b+d)*binHz,db:y1});
+    if(out.length>=maxN) break;
+  }
+  return {peaks:out,dbA,mx};
+}
+function moments(avgP,sr,N){
+  const bins=avgP.length; let sP=0,sK=0;
+  for(let b=1;b<bins;b++){sP+=avgP[b];sK+=b*avgP[b];}
+  let acc=0,ro=0; const tgt=.85*sP;
+  for(let b=1;b<bins;b++){acc+=avgP[b]; if(acc>=tgt){ro=b*sr/N;break;}}
+  return {cent:sP>0?sK/sP*sr/N:0,ro};
+}
+function avgFromSpec(){
+  const {db,frames,bins,mx}=spec, avg=new Float64Array(bins);
+  for(let f=0;f<frames;f++){const o=f*bins;for(let b=0;b<bins;b++) avg[b]+=Math.pow(10,(db[o+b]+mx)/10);}
+  for(let b=0;b<bins;b++) avg[b]/=frames;
+  return avg;
+}
+function drawAvg(dbA,mx,peaks){
+  const c=$('avg'), w=c.clientWidth; if(!w) return;
+  const dp=Math.min(2,window.devicePixelRatio||1);
+  c.width=Math.round(w*dp); c.height=Math.round(72*dp);
+  const x=c.getContext('2d'), W=c.width, H=c.height;
+  x.fillStyle='#000'; x.fillRect(0,0,W,H);
+  const [fa,fb]=viewRange(), nyq=lastStats.sr/2, bins=dbA.length, rng=+P.vrange, lo=mx-rng;
+  x.strokeStyle='#241f2c'; x.lineWidth=1;
+  for(let d=0;d<=rng;d+=20){const y=Math.round((1-(d/rng))*(H-1))+.5;x.beginPath();x.moveTo(0,y);x.lineTo(W,y);x.stroke();}
+  x.strokeStyle='#d4a574'; x.lineWidth=Math.max(1,dp); x.beginPath();
+  for(let px=0;px<W;px++){
+    const f=freqAtFrac(px/(W-1),fa,fb), bp=Math.max(0,Math.min(bins-1.001,f/nyq*(bins-1))), k=Math.floor(bp);
+    const v=dbA[k]*(1-(bp-k))+dbA[k+1]*(bp-k), y=(1-Math.max(0,Math.min(1,(v-lo)/rng)))*(H-1);
+    if(px===0)x.moveTo(px,y); else x.lineTo(px,y);
+  }
+  x.stroke();
+  x.strokeStyle='#d98b6a'; x.fillStyle='#7d7689'; x.font=Math.round(8*dp)+'px ui-monospace,Menlo,monospace';
+  for(const q of peaks){
+    const fr=P.vscale==='log'?Math.log(q.f/fa)/Math.log(fb/fa):(q.f-fa)/(fb-fa);
+    if(fr<0||fr>1) continue;
+    const px=Math.round(fr*(W-1))+.5; x.beginPath(); x.moveTo(px,0); x.lineTo(px,6*dp); x.stroke();
+  }
+  x.fillText(fmtHz(fa),3*dp,H-3*dp); x.textAlign='right'; x.fillText(fmtHz(fb),W-3*dp,H-3*dp);
+}
+function refreshStats(){
+  const grid=$('statGrid'); if(!grid) return;
+  let rows=[], avgP=null, sr=0, N=0, lv=null, src='';
+  if(live){
+    src='live mic'; sr=liveSR; N=lN; avgP=lavgP;
+    lv=levelsOf(lastSamples(),sr);
+    if(!lframes){grid.textContent='';return;}
+  }else if(cur){
+    src=cur.name||'audio'; sr=cur.sr; lv=levelsOf(cur.data,sr);
+    if(spec&&spec.sr===sr){N=spec.N; avgP=avgFromSpec();}
+  }else{grid.textContent='';$('peaks').textContent='';return;}
+  const dur=live?recLen/sr:cur.dur;
+  rows.push(['Source',src],[live?'Recorded':'Duration',dur.toFixed(2)+' s'],['Sample rate',sr+' Hz']);
+  rows.push(['Peak',dbf(lv.pk,1)+' dBFS'],['RMS',dbf(lv.rms,1)+' dBFS'],
+            ['Crest',lv.rms>0?(20*Math.log10(lv.pk/lv.rms)).toFixed(1)+' dB':'—'],
+            ['DC offset',lv.dc.toFixed(4)],['Clipped',String(live?lInfo.clip:lv.clip)],
+            ['Zero-cross',Math.round(lv.zcr)+' Hz']);
+  let pk=[], mom=null, dbA=null, mx=0;
+  if(avgP){
+    const fp=findPeaks(avgP,sr,N,6); pk=fp.peaks; dbA=fp.dbA; mx=fp.mx; mom=moments(avgP,sr,N);
+    rows.push(['Strongest',pk.length?noteOf(pk[0].f)+' · '+pk[0].f.toFixed(1)+' Hz':'—'],
+              ['Centroid',fmtHz(mom.cent)+' Hz'],['Rolloff 85%',fmtHz(mom.ro)+' Hz'],
+              ['FFT',N+' · '+(sr/N).toFixed(1)+' Hz/bin']);
+  }
+  grid.textContent='';
+  for(const [k,v] of rows){
+    const d=document.createElement('div'), a=document.createElement('span'), b=document.createElement('b');
+    a.textContent=k; b.textContent=v; d.append(a,b); grid.appendChild(d);
+  }
+  const fmt=(s,n)=>String(s).padStart(n);
+  $('peaks').textContent=pk.map((q,i)=>(i+1)+'  '+noteOf(q.f).padEnd(9)+fmt(q.f.toFixed(1),8)+' Hz '+fmt((q.db).toFixed(1),7)+' dB').join('\n');
+  lastStats={source:src,duration_s:dur,sr,peak_dbfs:lv.pk>0?20*Math.log10(lv.pk):null,rms_dbfs:lv.rms>0?20*Math.log10(lv.rms):null,
+    dc:lv.dc,clipped:live?lInfo.clip:lv.clip,zero_cross_hz:lv.zcr,
+    centroid_hz:mom?mom.cent:null,rolloff85_hz:mom?mom.ro:null,
+    peaks:pk.map(q=>({hz:+q.f.toFixed(2),db:+q.db.toFixed(1),note:noteOf(q.f)}))};
+  if(dbA) drawAvg(dbA,mx,pk);
+}
+function saveStats(){
+  if(live){setHudWarn('stop the mic to save');return;}
+  refreshStats(); if(!lastStats) return;
+  dl(new Blob([JSON.stringify(lastStats,null,2)],{type:'application/json'}),'spectro_stats.json');
+}
 
-        // ===========================================================================
-        // TRANSIENT DETECTION (for impulse mode)
-        // ===========================================================================
-        function detectTransient(currentRmsDb, now) {
-            const TRANSIENT_THRESHOLD = 14; // dB above rolling average
-            const COOLDOWN_MS = 180; // min time between transients
-            if (rollingRms < -70) rollingRms = currentRmsDb; // initialize
-            const diff = currentRmsDb - rollingRms;
-            const isTransient = diff > TRANSIENT_THRESHOLD && (now - lastImpulseTime) > COOLDOWN_MS;
-            if (isTransient) {
-                impulseCount++;
-                lastImpulseTime = now;
-                impulseFlash = 1;
-                recentImpulses.push({ time: now, strength: diff });
-                if (recentImpulses.length > 20) recentImpulses.shift();
-            }
-            // update rolling average (slow)
-            rollingRms = lerp(rollingRms, currentRmsDb, 0.04);
-            return isTransient;
-        }
-
-        // ===========================================================================
-        // CALIBRATION
-        // ===========================================================================
-        function startCal() {
-            if (!running) return;
-            calibrating = true;
-            calStart = performance.now();
-            calSamples = [];
-            $('dot').className = 'dot cal';
-            $('stxt').textContent = 'CALIBRATING';
-            $('btnCal').classList.add('armed');
-            $('btnCal').textContent = 'SAMPLING\u2026';
-            $('btnMic').disabled = true;
-            log('Hold still and quiet — sampling the room for ' + (CAL_MS / 1000).toFixed(1) + 's\u2026');
-        }
-
-        function finishCal() {
-            calibrating = false;
-            $('btnMic').disabled = false;
-            $('btnCal').classList.remove('armed');
-            $('btnCal').textContent = 'RECALIBRATE';
-            $('dot').className = 'dot live';
-            $('stxt').textContent = 'LISTENING';
-            if (calSamples.length) {
-                calSamples.sort((a, b) => a - b);
-                floorDb = calSamples[Math.floor(calSamples.length / 2)];
-                $('stFloor').classList.remove('pending');
-                $('stFloor').textContent = fmtDb(floorDb) + ' dB';
-                log('<b>Floor set at ' + fmtDb(floorDb) +
-                    ' dBFS.</b> Above-floor now reads how far each sound rises over the room.');
-            } else { log('Calibration caught no samples — try again.', 'warn'); }
-        }
-
-        // ===========================================================================
-        // READOUTS
-        // ===========================================================================
-        function updateReadouts(rms, peak) {
-            $('dbNum').innerHTML = fmtDb(rms);
-            $('stPeak').innerHTML = fmtDb(peak);
-            if (floorDb !== null) {
-                const above = rms <= DB_FLOOR + 0.5 ? 0 : (rms - floorDb);
-                const el = $('stAbove');
-                el.classList.remove('pending');
-                el.classList.toggle('green', above > 3);
-                el.innerHTML = (above > 0 ? '+' : '') + above.toFixed(1) + ' dB';
-            }
-        }
-
-        function updateModeData() {
-            const md = $('modeData');
-            switch (mode) {
-                case 'tuner':
-                    md.innerHTML =
-                        '<div class="md-stat"><div class="md-k">Note</div><div class="md-v big highlight">' +
-                        lastNoteName + '</div></div>' +
-                        '<div class="md-stat"><div class="md-k">Cents</div><div class="md-v' + (Math.abs(lastCents) > 25 &&
-                            lastNoteName !== '--' ? ' warn' : '') + '">' + (lastNoteName === '--' ? '--' : (lastCents >= 0 ?
-                            '+' : '') + lastCents + ' ¢') + '</div></div>' +
-                        '<div class="md-stat"><div class="md-k">Frequency</div><div class="md-v">' + (lastFreq > 0 ? lastFreq
-                            .toFixed(1) + ' Hz' : '--') + '</div></div>' +
-                        '<div class="md-stat"><div class="md-k">Confidence</div><div class="md-v' + (pitchConfidence > 0.7 ?
-                            ' green' : '') + '">' + (pitchConfidence > 0 ? Math.round(pitchConfidence * 100) + '%' : '--') +
-                        '</div></div>';
-                    break;
-                case 'spectrum':
-                    const domFreq = resonancePeaks.length > 0 ? resonancePeaks[0].frequency.toFixed(1) : '--';
-                    md.innerHTML =
-                        '<div class="md-stat"><div class="md-k">Dominant freq</div><div class="md-v highlight">' + domFreq +
-                        (domFreq !== '--' ? ' Hz' : '') + '</div></div>' +
-                        '<div class="md-stat"><div class="md-k">Bandwidth</div><div class="md-v">' + (resonancePeaks.length >=
-                            3 ? (resonancePeaks[2].frequency - resonancePeaks[0].frequency).toFixed(0) + ' Hz' : '--') +
-                        '</div></div>' +
-                        '<div class="md-stat"><div class="md-k">Peaks found</div><div class="md-v">' + resonancePeaks
-                        .length + '</div></div>' +
-                        '<div class="md-stat"><div class="md-k">Spectral centroid</div><div class="md-v">' + (freqBuf ?
-                            calcSpectralCentroid().toFixed(0) + ' Hz' : '--') + '</div></div>';
-                    break;
-                case 'oscilloscope':
-                    const periodEst = lastFreq > 0 ? (1000 / lastFreq).toFixed(2) : '--';
-                    md.innerHTML =
-                        '<div class="md-stat"><div class="md-k">Est. frequency</div><div class="md-v">' + (lastFreq > 0 ?
-                            lastFreq.toFixed(1) + ' Hz' : '--') + '</div></div>' +
-                        '<div class="md-stat"><div class="md-k">Est. period</div><div class="md-v">' + (periodEst !== '--' ?
-                            periodEst + ' ms' : '--') + '</div></div>' +
-                        '<div class="md-stat"><div class="md-k">Samples</div><div class="md-v">' + (timeBuf ? timeBuf
-                            .length : '--') + '</div></div>' +
-                        '<div class="md-stat"><div class="md-k">Sample rate</div><div class="md-v">' + (ctx ? (ctx
-                            .sampleRate / 1000).toFixed(1) + ' kHz' : '--') + '</div></div>';
-                    break;
-                case 'resonance':
-                    let peakHTML = '';
-                    const annotated = findHarmonics(resonancePeaks, 0.08);
-                    for (let i = 0; i < Math.min(5, annotated.length); i++) {
-                        const p = annotated[i];
-                        const noteInfo = frequencyToNote(p.frequency);
-                        peakHTML += '<div class="md-stat"><div class="md-k">Peak ' + (i + 1) + (p.harmonic ? ' (H' + p
-                            .harmonic + ')' : '') + '</div><div class="md-v" style="font-size:11px;">' + p.frequency.toFixed(
-                                1) + ' Hz <span style="color:var(--dim);">' + noteInfo.name + '</span></div></div>';
-                    }
-                    md.innerHTML = peakHTML || '<div class="md-stat"><div class="md-k">No peaks</div><div class="md-v">--</div></div>';
-                    break;
-                case 'voice':
-                    const rangeText = voiceMaxPitch > 0 && voiceMinPitch < Infinity ?
-                        frequencyToNote(voiceMinPitch).name + ' – ' + frequencyToNote(voiceMaxPitch).name :
-                        '--';
-                    const voiceType = estimateVoiceType(voiceMinPitch, voiceMaxPitch);
-                    md.innerHTML =
-                        '<div class="md-stat"><div class="md-k">Pitch</div><div class="md-v big highlight">' + lastNoteName +
-                        '</div></div>' +
-                        '<div class="md-stat"><div class="md-k">Range detected</div><div class="md-v" style="font-size:11px;">' +
-                        rangeText + '</div></div>' +
-                        '<div class="md-stat"><div class="md-k">Voice type</div><div class="md-v">' + voiceType +
-                        '</div></div>' +
-                        '<div class="md-stat"><div class="md-k">Confidence</div><div class="md-v' + (pitchConfidence > 0.7 ?
-                            ' green' : '') + '">' + (pitchConfidence > 0 ? Math.round(pitchConfidence * 100) + '%' : '--') +
-                        '</div></div>';
-                    break;
-                case 'impulse':
-                    const lastStr = recentImpulses.length > 0 ? recentImpulses[recentImpulses.length - 1].strength.toFixed(
-                        1) + ' dB' : '--';
-                    md.innerHTML =
-                        '<div class="md-stat"><div class="md-k">Transients</div><div class="md-v big highlight">' +
-                        impulseCount + '</div></div>' +
-                        '<div class="md-stat"><div class="md-k">Last strength</div><div class="md-v' + (impulseFlash > 0.5 ?
-                            ' warn' : '') + '">' + lastStr + '</div></div>' +
-                        '<div class="md-stat"><div class="md-k">Rolling floor</div><div class="md-v">' + fmtDb(rollingRms) +
-                        ' dB</div></div>' +
-                        '<div class="md-stat"><div class="md-k">Rate</div><div class="md-v">' + (recentImpulses.length >= 2 ?
-                            calcImpulseRate().toFixed(1) + '/s' : '--') + '</div></div>';
-                    break;
-            }
-        }
-
-        function calcSpectralCentroid() {
-            if (!freqBuf) return 0;
-            let sumWeighted = 0,
-                sumAmp = 0;
-            const bins = freqBuf.length;
-            const sr = ctx ? ctx.sampleRate : 44100;
-            for (let i = 0; i < bins; i++) {
-                const freq = i * sr / (FFT);
-                sumWeighted += freq * freqBuf[i];
-                sumAmp += freqBuf[i];
-            }
-            return sumAmp > 0 ? sumWeighted / sumAmp : 0;
-        }
-
-        function estimateVoiceType(minPitch, maxPitch) {
-            if (minPitch >= Infinity || maxPitch <= 0) return '--';
-            const minNote = frequencyToNote(minPitch).name;
-            const maxNote = frequencyToNote(maxPitch).name;
-            const midiMin = 69 + 12 * Math.log2(minPitch / 440);
-            const midiMax = 69 + 12 * Math.log2(maxPitch / 440);
-            const range = midiMax - midiMin;
-            if (midiMax < 55) return 'Bass';
-            if (midiMax < 64) return 'Baritone';
-            if (midiMax < 70) return 'Tenor';
-            if (midiMax < 76) return 'Alto';
-            if (midiMax < 82) return 'Mezzo-Soprano';
-            return 'Soprano';
-        }
-
-        function calcImpulseRate() {
-            if (recentImpulses.length < 2) return 0;
-            const windowMs = 3000;
-            const now = performance.now();
-            let count = 0;
-            for (const imp of recentImpulses) {
-                if (now - imp.time < windowMs) count++;
-            }
-            return count / (windowMs / 1000);
-        }
-
-        // ===========================================================================
-        // RENDER
-        // ===========================================================================
-        function hueRGB(h, s, v) {
-            const c = v * s,
-                x = c * (1 - Math.abs((h / 60) % 2 - 1)),
-                m = v - c;
-            let r, g, b;
-            if (h < 60) { r = c;
-                g = x;
-                b = 0; } else if (h < 120) { r = x;
-                g = c;
-                b = 0; } else if (h < 180) { r = 0;
-                g = c;
-                b = x; } else if (h < 240) { r = 0;
-                g = x;
-                b = c; } else if (h < 300) { r = x;
-                g = 0;
-                b = c; } else { r = c;
-                g = 0;
-                b = x; }
-            return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
-        }
-
-        function frame(now) {
-            requestAnimationFrame(frame);
-            const dt = lastT ? (now - lastT) / 1000 : 0;
-            lastT = now;
-            let rms = DB_FLOOR,
-                pk = DB_FLOOR;
-            if (running && analyser && !frozen) {
-                analyser.getFloatTimeDomainData(timeBuf);
-                analyser.getByteFrequencyData(freqBuf);
-                rms = rmsDb(timeBuf);
-                pk = peakDb(timeBuf);
-                peakHeldDb = Math.max(peakHeldDb - PEAK_DECAY * dt, pk);
-                if (peakHeldDb < DB_FLOOR) peakHeldDb = DB_FLOOR;
-                if (calibrating) {
-                    calSamples.push(rms);
-                    if (now - calStart >= CAL_MS) finishCal();
-                }
-                // mode-specific analysis
-                const sr = ctx ? ctx.sampleRate : 44100;
-                switch (mode) {
-                    case 'tuner':
-                        if (rms > -40) {
-                            const result = detectPitch(timeBuf, sr, 50, 2000);
-                            if (result && result.confidence > 0.5) {
-                                lastFreq = result.frequency;
-                                pitchConfidence = result.confidence;
-                                const noteInfo = frequencyToNote(result.frequency);
-                                lastNoteName = noteInfo.name;
-                                lastCents = noteInfo.cents;
-                            } else if (result && result.confidence > 0.35) {
-                                lastFreq = result.frequency;
-                                pitchConfidence = result.confidence;
-                                const noteInfo = frequencyToNote(result.frequency);
-                                lastNoteName = noteInfo.name;
-                                lastCents = noteInfo.cents;
-                            } else {
-                                pitchConfidence = result ? result.confidence : 0;
-                                if (pitchConfidence < 0.35) { lastNoteName = '--';
-                                    lastCents = 0;
-                                    lastFreq = 0; }
-                            }
-                        } else { lastNoteName = '--';
-                            lastCents = 0;
-                            lastFreq = 0;
-                            pitchConfidence = 0; }
-                        break;
-                    case 'spectrum':
-                        resonancePeaks = findSpectralPeaks(freqBuf, sr, FFT, 8);
-                        if (resonancePeaks.length > 0 && rms > -40) {
-                            lastFreq = resonancePeaks[0].frequency;
-                            lastNoteName = frequencyToNote(lastFreq).name;
-                        }
-                        break;
-                    case 'oscilloscope':
-                        if (rms > -40) {
-                            const result = detectPitch(timeBuf, sr, 40, 3000);
-                            if (result && result.confidence > 0.4) {
-                                lastFreq = result.frequency;
-                                pitchConfidence = result.confidence;
-                                lastNoteName = frequencyToNote(result.frequency).name;
-                            } else if (rms < -35) { lastFreq = 0;
-                                lastNoteName = '--'; }
-                        }
-                        break;
-                    case 'resonance':
-                        resonancePeaks = findSpectralPeaks(freqBuf, sr, FFT, 8);
-                        if (resonancePeaks.length > 0) {
-                            lastFreq = resonancePeaks[0].frequency;
-                            lastNoteName = frequencyToNote(lastFreq).name;
-                        }
-                        break;
-                    case 'voice':
-                        if (rms > -40) {
-                            const result = detectPitch(timeBuf, sr, 75, 1200);
-                            if (result && result.confidence > 0.5) {
-                                lastFreq = result.frequency;
-                                pitchConfidence = result.confidence;
-                                const noteInfo = frequencyToNote(result.frequency);
-                                lastNoteName = noteInfo.name;
-                                lastCents = noteInfo.cents;
-                                if (result.frequency > 75 && result.frequency < 1200) {
-                                    voiceMinPitch = Math.min(voiceMinPitch, result.frequency);
-                                    voiceMaxPitch = Math.max(voiceMaxPitch, result.frequency);
-                                    voicePitchHistory.push({ time: now, freq: result.frequency });
-                                    while (voicePitchHistory.length > 0 && now - voicePitchHistory[0].time >
-                                        8000) voicePitchHistory.shift();
-                                }
-                            } else if (result && result.confidence > 0.35) {
-                                lastFreq = result.frequency;
-                                pitchConfidence = result.confidence;
-                                const noteInfo = frequencyToNote(result.frequency);
-                                lastNoteName = noteInfo.name;
-                                lastCents = noteInfo.cents;
-                            } else { pitchConfidence = result ? result.confidence : 0; if (pitchConfidence < 0.35) {
-                                    lastNoteName = '--';
-                                    lastCents = 0;
-                                    lastFreq = 0; } }
-                        } else { lastNoteName = '--';
-                            lastCents = 0;
-                            lastFreq = 0;
-                            pitchConfidence = 0; }
-                        break;
-                    case 'impulse':
-                        detectTransient(rms, now);
-                        if (impulseFlash > 0) impulseFlash = Math.max(0, impulseFlash - dt * 3.5);
-                        break;
-                }
-                updateReadouts(rms, peakHeldDb);
-                updateModeData();
-            }
-            // eased color
-            const tgtHue = lerp(150, 0, heat(rms));
-            dispHue = lerp(dispHue, tgtHue, 0.15);
-            const [R, G, B] = hueRGB(dispHue, 0.9, 1);
-            const col = 'rgb(' + R + ',' + G + ',' + B + ')';
-            document.body.style.background = 'rgb(' + ((R * 0.03 + 6) | 0) + ',' + ((G * 0.03 + 8) | 0) + ',' + ((B * 0.03 +
-                16) | 0) + ')';
-            // impulse flash on panel
-            if (impulseFlash > 0.5 && mode === 'impulse') {
-                $('scopePanel').style.boxShadow = '0 0 ' + (impulseFlash * 25) + 'px rgba(255,77,77,' + impulseFlash
-                    .toFixed(2) + ')';
-            } else { $('scopePanel').style.boxShadow = ''; }
-            drawScope(R, G, B, col);
-            drawSpectrum(R, G, B);
-            drawMeter(R, G, B, rms);
-        }
-
-        function drawScope(R, G, B, col) {
-            if (!scopeCx) return;
-            switch (mode) {
-                case 'oscilloscope':
-                    drawScopeOscilloscope(R, G, B, col);
-                    break;
-                case 'tuner':
-                    drawScopeTuner(R, G, B);
-                    break;
-                case 'spectrum':
-                    drawScopeBigSpectrum(R, G, B);
-                    break;
-                case 'resonance':
-                    drawScopeResonance(R, G, B);
-                    break;
-                case 'voice':
-                    drawScopeVoice(R, G, B, col);
-                    break;
-                case 'impulse':
-                    drawScopeImpulse(R, G, B, col);
-                    break;
-                default:
-                    drawScopeOscilloscope(R, G, B, col);
-            }
-        }
-
-        function drawScopeOscilloscope(R, G, B, col) {
-            const w = scopeCv.width,
-                h = scopeCv.height;
-            scopeCx.fillStyle = frozen ? 'rgba(4,7,15,1)' : 'rgba(4,7,15,0.32)';
-            scopeCx.fillRect(0, 0, w, h);
-            scopeCx.strokeStyle = 'rgba(27,39,64,0.9)';
-            scopeCx.lineWidth = 1;
-            scopeCx.beginPath();
-            scopeCx.moveTo(0, h / 2);
-            scopeCx.lineTo(w, h / 2);
-            scopeCx.stroke();
-            scopeCx.strokeStyle = 'rgba(27,39,64,0.5)';
-            for (let i = 1; i < 4; i++) { const y = h * i / 4;
-                scopeCx.beginPath();
-                scopeCx.moveTo(0, y);
-                scopeCx.lineTo(w, y);
-                scopeCx.stroke(); }
-            scopeCx.lineWidth = 2 * DPR;
-            scopeCx.strokeStyle = col;
-            scopeCx.shadowBlur = 12 * DPR;
-            scopeCx.shadowColor = col;
-            scopeCx.beginPath();
-            if (running && timeBuf) {
-                const N = timeBuf.length,
-                    step = Math.max(1, (N / w) | 0);
-                let x = 0;
-                for (let i = 0; i < N; i += step) {
-                    const y = h / 2 - timeBuf[i] * h * 0.46;
-                    x === 0 ? scopeCx.moveTo(0, y) : scopeCx.lineTo(x, y);
-                    x = i / (N - 1) * w;
-                }
-            } else { scopeCx.moveTo(0, h / 2);
-                scopeCx.lineTo(w, h / 2); }
-            scopeCx.stroke();
-            scopeCx.shadowBlur = 0;
-        }
-
-        function drawScopeTuner(R, G, B) {
-            const w = scopeCv.width,
-                h = scopeCv.height;
-            scopeCx.fillStyle = '#04070f';
-            scopeCx.fillRect(0, 0, w, h);
-            const cx = w / 2,
-                cy = h * 0.38;
-            // large note name
-            scopeCx.fillStyle = lastNoteName !== '--' ? 'rgb(' + R + ',' + G + ',' + B + ')' : 'rgba(74,90,122,0.6)';
-            scopeCx.font = 'bold ' + (56 * DPR) + 'px "IBM Plex Mono", monospace';
-            scopeCx.textAlign = 'center';
-            scopeCx.textBaseline = 'middle';
-            scopeCx.fillText(lastNoteName === '--' ? '--' : lastNoteName, cx, cy);
-            // frequency below
-            scopeCx.fillStyle = 'rgba(74,90,122,0.9)';
-            scopeCx.font = (13 * DPR) + 'px "IBM Plex Mono", monospace';
-            scopeCx.fillText(lastFreq > 0 ? lastFreq.toFixed(1) + ' Hz' : 'waiting for signal\u2026', cx, cy + 42 * DPR);
-            // cents bar
-            const barY = h * 0.72,
-                barW = w * 0.7,
-                barH = 16 * DPR;
-            const barX = cx - barW / 2;
-            scopeCx.fillStyle = 'rgba(27,39,64,0.6)';
-            scopeCx.fillRect(barX, barY, barW, barH);
-            // center line
-            scopeCx.strokeStyle = 'rgba(243,238,195,0.7)';
-            scopeCx.lineWidth = 1.5 * DPR;
-            scopeCx.beginPath();
-            scopeCx.moveTo(cx, barY - 6 * DPR);
-            scopeCx.lineTo(cx, barY + barH + 6 * DPR);
-            scopeCx.stroke();
-            // tick marks
-            for (let c = -40; c <= 40; c += 10) {
-                const tx = cx + (c / 50) * barW / 2;
-                scopeCx.strokeStyle = c === 0 ? 'rgba(243,238,195,0.8)' : 'rgba(74,90,122,0.5)';
-                scopeCx.lineWidth = c === 0 ? 1.5 * DPR : 0.8 * DPR;
-                scopeCx.beginPath();
-                scopeCx.moveTo(tx, barY - 3 * DPR);
-                scopeCx.lineTo(tx, barY + barH + 3 * DPR);
-                scopeCx.stroke();
-                if (c % 20 === 0) {
-                    scopeCx.fillStyle = 'rgba(74,90,122,0.7)';
-                    scopeCx.font = (8 * DPR) + 'px "IBM Plex Mono", monospace';
-                    scopeCx.textAlign = 'center';
-                    scopeCx.fillText((c >= 0 ? '+' : '') + c, tx, barY + barH + 14 * DPR);
-                }
-            }
-            // needle
-            if (lastNoteName !== '--') {
-                const needleX = cx + (lastCents / 50) * barW / 2;
-                const nclamped = clamp(needleX, barX, barX + barW);
-                scopeCx.fillStyle = 'rgb(' + R + ',' + G + ',' + B + ')';
-                scopeCx.beginPath();
-                scopeCx.moveTo(nclamped, barY - 4 * DPR);
-                scopeCx.lineTo(nclamped - 5 * DPR, barY - 12 * DPR);
-                scopeCx.lineTo(nclamped + 5 * DPR, barY - 12 * DPR);
-                scopeCx.closePath();
-                scopeCx.fill();
-                scopeCx.fillRect(nclamped - 1.5 * DPR, barY - 2 * DPR, 3 * DPR, barH + 4 * DPR);
-            }
-            // cents readout
-            scopeCx.fillStyle = 'rgba(243,238,195,0.9)';
-            scopeCx.font = 'bold ' + (11 * DPR) + 'px "IBM Plex Mono", monospace';
-            scopeCx.textAlign = 'center';
-            const centsText = lastNoteName !== '--' ? (lastCents >= 0 ? '+' : '') + lastCents + ' ¢' : '';
-            scopeCx.fillText(centsText, cx, barY + barH + 28 * DPR);
-            scopeCx.textAlign = 'start';
-        }
-
-        function drawScopeBigSpectrum(R, G, B) {
-            const w = scopeCv.width,
-                h = scopeCv.height;
-            scopeCx.fillStyle = '#04070f';
-            scopeCx.fillRect(0, 0, w, h);
-            if (!(running && freqBuf && specBins)) return;
-            const bw = w / SPEC_BARS;
-            for (let i = 0; i < SPEC_BARS; i++) {
-                const [lo, hi] = specBins[i];
-                let sum = 0;
-                for (let b = lo; b < hi; b++) sum += freqBuf[b];
-                const mag = (sum / (hi - lo)) / 255;
-                const bh = mag * h;
-                scopeCx.fillStyle = 'rgba(' + R + ',' + G + ',' + B + ',' + (0.28 + mag * 0.72).toFixed(3) + ')';
-                scopeCx.fillRect(i * bw, h - bh, bw * 0.85, bh);
-            }
-            // frequency axis labels
-            scopeCx.fillStyle = 'rgba(74,90,122,0.8)';
-            scopeCx.font = (8 * DPR) + 'px "IBM Plex Mono", monospace';
-            scopeCx.textBaseline = 'top';
-            const sr = ctx ? ctx.sampleRate : 44100;
-            const labels = [50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
-            for (const lf of labels) {
-                const binFrac = Math.log2(lf / 20) / Math.log2(sr / 2 / 20);
-                if (binFrac >= 0 && binFrac <= 1) {
-                    const lx = binFrac * w;
-                    scopeCx.fillText(lf >= 1000 ? (lf / 1000).toFixed(0) + 'k' : lf + '', lx + 3 * DPR, 2 * DPR);
-                    scopeCx.strokeStyle = 'rgba(27,39,64,0.4)';
-                    scopeCx.lineWidth = 0.5 * DPR;
-                    scopeCx.beginPath();
-                    scopeCx.moveTo(lx, 0);
-                    scopeCx.lineTo(lx, h);
-                    scopeCx.stroke();
-                }
-            }
-        }
-
-        function drawScopeResonance(R, G, B) {
-            const w = scopeCv.width,
-                h = scopeCv.height;
-            scopeCx.fillStyle = '#04070f';
-            scopeCx.fillRect(0, 0, w, h);
-            if (!(running && freqBuf && specBins)) return;
-            const bw = w / SPEC_BARS;
-            for (let i = 0; i < SPEC_BARS; i++) {
-                const [lo, hi] = specBins[i];
-                let sum = 0;
-                for (let b = lo; b < hi; b++) sum += freqBuf[b];
-                const mag = (sum / (hi - lo)) / 255;
-                const bh = mag * h;
-                scopeCx.fillStyle = 'rgba(' + R + ',' + G + ',' + B + ',' + (0.22 + mag * 0.78).toFixed(3) + ')';
-                scopeCx.fillRect(i * bw, h - bh, bw * 0.85, bh);
-            }
-            // mark peaks
-            const annotated = findHarmonics(resonancePeaks, 0.08);
-            const sr = ctx ? ctx.sampleRate : 44100;
-            const maxBin = freqBuf.length - 1;
-            const colors = ['rgba(164,120,232,0.95)', 'rgba(0,204,221,0.9)', 'rgba(0,221,102,0.85)', 'rgba(245,181,46,0.8)',
-                'rgba(255,77,77,0.75)', 'rgba(255,136,170,0.7)'
-            ];
-            for (let i = 0; i < Math.min(6, annotated.length); i++) {
-                const p = annotated[i];
-                const binFrac = Math.log2(p.frequency / 20) / Math.log2(sr / 2 / 20);
-                const px = clamp(binFrac * w, 4, w - 4);
-                const py = h - (p.magnitude / 255) * h;
-                scopeCx.fillStyle = colors[i] || 'rgba(255,255,255,0.7)';
-                scopeCx.beginPath();
-                scopeCx.arc(px, py, 7 * DPR, 0, Math.PI * 2);
-                scopeCx.fill();
-                scopeCx.strokeStyle = '#04070f';
-                scopeCx.lineWidth = 1.5 * DPR;
-                scopeCx.stroke();
-                // label
-                scopeCx.fillStyle = '#F3EEC3';
-                scopeCx.font = 'bold ' + (9 * DPR) + 'px "IBM Plex Mono", monospace';
-                scopeCx.textAlign = 'center';
-                scopeCx.fillText((i + 1) + '', px, py - 10 * DPR);
-                scopeCx.fillStyle = 'rgba(243,238,195,0.7)';
-                scopeCx.font = (7 * DPR) + 'px "IBM Plex Mono", monospace';
-                scopeCx.fillText(p.frequency.toFixed(0) + ' Hz', px, py - 22 * DPR);
-            }
-            scopeCx.textAlign = 'start';
-        }
-
-        function drawScopeVoice(R, G, B, col) {
-            const w = scopeCv.width,
-                h = scopeCv.height;
-            scopeCx.fillStyle = 'rgba(4,7,15,0.55)';
-            scopeCx.fillRect(0, 0, w, h);
-            // range guides
-            const sr = ctx ? ctx.sampleRate : 44100;
-            const voiceRangeHz = [80, 1100];
-            const yForFreq = (freq) => {
-                const logMin = Math.log2(voiceRangeHz[0]);
-                const logMax = Math.log2(voiceRangeHz[1]);
-                const frac = (Math.log2(clamp(freq, voiceRangeHz[0], voiceRangeHz[1])) - logMin) / (logMax - logMin);
-                return h - frac * h;
-            };
-            // guide lines for common notes
-            const guideNotes = [82.4, 110, 146.8, 196, 261.6, 349.2, 440, 523.3, 698.5, 880, 1046.5]; // E2 to C6
-            for (const gf of guideNotes) {
-                const gy = yForFreq(gf);
-                scopeCx.strokeStyle = 'rgba(27,39,64,0.5)';
-                scopeCx.lineWidth = 0.5 * DPR;
-                scopeCx.beginPath();
-                scopeCx.moveTo(0, gy);
-                scopeCx.lineTo(w, gy);
-                scopeCx.stroke();
-                scopeCx.fillStyle = 'rgba(74,90,122,0.6)';
-                scopeCx.font = (7 * DPR) + 'px "IBM Plex Mono", monospace';
-                scopeCx.fillText(frequencyToNote(gf).name.replace(/\d/, ''), 2 * DPR, gy - 2 * DPR);
-            }
-            // pitch trace
-            if (voicePitchHistory.length > 1) {
-                scopeCx.strokeStyle = col;
-                scopeCx.lineWidth = 2.5 * DPR;
-                scopeCx.shadowBlur = 8 * DPR;
-                scopeCx.shadowColor = col;
-                scopeCx.beginPath();
-                const now = performance.now();
-                const traceWindow = 8000;
-                let firstPoint = true;
-                for (const pt of voicePitchHistory) {
-                    const age = now - pt.time;
-                    if (age > traceWindow) continue;
-                    const sx = w - (age / traceWindow) * w;
-                    const sy = yForFreq(pt.freq);
-                    if (firstPoint) { scopeCx.moveTo(sx, sy);
-                        firstPoint = false; } else scopeCx.lineTo(sx, sy);
-                }
-                scopeCx.stroke();
-                scopeCx.shadowBlur = 0;
-            }
-            // current pitch dot
-            if (lastFreq > 0 && lastNoteName !== '--') {
-                const cy = yForFreq(lastFreq);
-                scopeCx.fillStyle = col;
-                scopeCx.beginPath();
-                scopeCx.arc(w - 10 * DPR, cy, 8 * DPR, 0, Math.PI * 2);
-                scopeCx.fill();
-                scopeCx.fillStyle = '#F3EEC3';
-                scopeCx.font = 'bold ' + (10 * DPR) + 'px "IBM Plex Mono", monospace';
-                scopeCx.textAlign = 'right';
-                scopeCx.fillText(lastNoteName, w - 24 * DPR, cy + 4 * DPR);
-                scopeCx.textAlign = 'start';
-            }
-            // range indicators
-            if (voiceMaxPitch > 0 && voiceMinPitch < Infinity) {
-                const minY = yForFreq(voiceMinPitch);
-                const maxY = yForFreq(voiceMaxPitch);
-                scopeCx.strokeStyle = 'rgba(255,136,170,0.7)';
-                scopeCx.lineWidth = 1.5 * DPR;
-                scopeCx.setLineDash([5 * DPR, 3 * DPR]);
-                scopeCx.beginPath();
-                scopeCx.moveTo(w * 0.15, minY);
-                scopeCx.lineTo(w, minY);
-                scopeCx.moveTo(w * 0.15, maxY);
-                scopeCx.lineTo(w, maxY);
-                scopeCx.stroke();
-                scopeCx.setLineDash([]);
-                scopeCx.fillStyle = 'rgba(255,136,170,0.9)';
-                scopeCx.font = (8 * DPR) + 'px "IBM Plex Mono", monospace';
-                scopeCx.fillText('MAX ' + frequencyToNote(voiceMaxPitch).name, w * 0.16, maxY - 3 * DPR);
-                scopeCx.fillText('MIN ' + frequencyToNote(voiceMinPitch).name, w * 0.16, minY + 10 * DPR);
-            }
-        }
-
-        function drawScopeImpulse(R, G, B, col) {
-            const w = scopeCv.width,
-                h = scopeCv.height;
-            scopeCx.fillStyle = frozen ? 'rgba(4,7,15,1)' : 'rgba(4,7,15,0.38)';
-            scopeCx.fillRect(0, 0, w, h);
-            // waveform
-            scopeCx.strokeStyle = 'rgba(27,39,64,0.9)';
-            scopeCx.lineWidth = 1;
-            scopeCx.beginPath();
-            scopeCx.moveTo(0, h / 2);
-            scopeCx.lineTo(w, h / 2);
-            scopeCx.stroke();
-            scopeCx.lineWidth = 2 * DPR;
-            scopeCx.strokeStyle = col;
-            scopeCx.shadowBlur = 6 * DPR;
-            scopeCx.shadowColor = col;
-            scopeCx.beginPath();
-            if (running && timeBuf) {
-                const N = timeBuf.length,
-                    step = Math.max(1, (N / w) | 0);
-                let x = 0;
-                for (let i = 0; i < N; i += step) {
-                    const y = h / 2 - timeBuf[i] * h * 0.44;
-                    x === 0 ? scopeCx.moveTo(0, y) : scopeCx.lineTo(x, y);
-                    x = i / (N - 1) * w;
-                }
-            } else { scopeCx.moveTo(0, h / 2);
-                scopeCx.lineTo(w, h / 2); }
-            scopeCx.stroke();
-            scopeCx.shadowBlur = 0;
-            // transient markers on recent impulses
-            const now = performance.now();
-            const traceWindow = 5000;
-            for (const imp of recentImpulses) {
-                const age = now - imp.time;
-                if (age > traceWindow) continue;
-                const sx = w - (age / traceWindow) * w;
-                const alpha = 1 - age / traceWindow;
-                scopeCx.strokeStyle = 'rgba(255,77,77,' + alpha.toFixed(2) + ')';
-                scopeCx.lineWidth = 2 * DPR;
-                scopeCx.beginPath();
-                scopeCx.moveTo(sx, 0);
-                scopeCx.lineTo(sx, h);
-                scopeCx.stroke();
-            }
-            // impulse strength bar
-            const barH = 10 * DPR;
-            const barY = h - barH - 4 * DPR;
-            const barW = w - 12 * DPR;
-            const barX = 6 * DPR;
-            scopeCx.fillStyle = 'rgba(27,39,64,0.6)';
-            scopeCx.fillRect(barX, barY, barW, barH);
-            if (recentImpulses.length > 0) {
-                const lastStr = recentImpulses[recentImpulses.length - 1].strength;
-                const fillW = clamp(lastStr / 35, 0, 1) * barW;
-                const grad = scopeCx.createLinearGradient(barX, 0, barX + barW, 0);
-                grad.addColorStop(0, 'rgba(255,77,77,0.5)');
-                grad.addColorStop(0.7, 'rgba(255,77,77,0.9)');
-                grad.addColorStop(1, 'rgba(255,180,50,0.95)');
-                scopeCx.fillStyle = grad;
-                scopeCx.fillRect(barX, barY, fillW, barH);
-            }
-            scopeCx.fillStyle = 'rgba(243,238,195,0.8)';
-            scopeCx.font = (7 * DPR) + 'px "IBM Plex Mono", monospace';
-            scopeCx.fillText('TRANSIENT STRENGTH', barX, barY - 3 * DPR);
-        }
-
-        function drawSpectrum(R, G, B) {
-            if (!specCx) return;
-            const w = specCv.width,
-                h = specCv.height;
-            specCx.fillStyle = '#04070f';
-            specCx.fillRect(0, 0, w, h);
-            if (!(running && freqBuf && specBins)) return;
-            const bw = w / SPEC_BARS;
-            if (mode === 'resonance') {
-                // highlight peaks in resonance mode
-                const annotated = findHarmonics(resonancePeaks, 0.08);
-                const peakBins = new Set();
-                for (const p of annotated.slice(0, 6)) {
-                    const approxBin = Math.round(p.frequency / ((ctx ? ctx.sampleRate : 44100) / FFT));
-                    peakBins.add(approxBin);
-                }
-                for (let i = 0; i < SPEC_BARS; i++) {
-                    const [lo, hi] = specBins[i];
-                    let sum = 0;
-                    let hasPeak = false;
-                    for (let b = lo; b < hi; b++) { sum += freqBuf[b]; if (peakBins.has(b)) hasPeak = true; }
-                    const mag = (sum / (hi - lo)) / 255;
-                    const bh = mag * h;
-                    specCx.fillStyle = hasPeak ?
-                        'rgba(164,120,232,' + (0.6 + mag * 0.4).toFixed(3) + ')' :
-                        'rgba(' + R + ',' + G + ',' + B + ',' + (0.2 + mag * 0.5).toFixed(3) + ')';
-                    specCx.fillRect(i * bw, h - bh, bw * 0.8, bh);
-                }
-            } else if (mode === 'impulse') {
-                // show recent transient spectrum differently
-                for (let i = 0; i < SPEC_BARS; i++) {
-                    const [lo, hi] = specBins[i];
-                    let sum = 0;
-                    for (let b = lo; b < hi; b++) sum += freqBuf[b];
-                    const mag = (sum / (hi - lo)) / 255;
-                    const bh = mag * h;
-                    specCx.fillStyle = 'rgba(' + R + ',' + G + ',' + B + ',' + (0.2 + mag * 0.7).toFixed(3) + ')';
-                    specCx.fillRect(i * bw, h - bh, bw * 0.8, bh);
-                }
-                if (impulseFlash > 0.3) {
-                    specCx.fillStyle = 'rgba(255,77,77,' + (impulseFlash * 0.25).toFixed(2) + ')';
-                    specCx.fillRect(0, 0, w, h);
-                }
-            } else {
-                for (let i = 0; i < SPEC_BARS; i++) {
-                    const [lo, hi] = specBins[i];
-                    let sum = 0;
-                    for (let b = lo; b < hi; b++) sum += freqBuf[b];
-                    const mag = (sum / (hi - lo)) / 255;
-                    const bh = mag * h;
-                    specCx.fillStyle = 'rgba(' + R + ',' + G + ',' + B + ',' + (0.28 + mag * 0.72).toFixed(3) + ')';
-                    specCx.fillRect(i * bw, h - bh, bw * 0.8, bh);
-                }
-            }
-        }
-
-        function drawMeter(R, G, B, rms) {
-            if (!meterCx) return;
-            const w = meterCv.width,
-                h = meterCv.height;
-            meterCx.fillStyle = '#04070f';
-            meterCx.fillRect(0, 0, w, h);
-            const pad = 6 * DPR,
-                x0 = pad,
-                x1 = w - pad,
-                bw = x1 - x0;
-            meterCx.font = (9 * DPR) + 'px "IBM Plex Mono", monospace';
-            meterCx.textBaseline = 'bottom';
-            for (let db = METER_MIN; db <= METER_MAX; db += 12) {
-                const x = x0 + meterPos(db) * bw;
-                meterCx.strokeStyle = 'rgba(27,39,64,0.9)';
-                meterCx.lineWidth = 1;
-                meterCx.beginPath();
-                meterCx.moveTo(x, 0);
-                meterCx.lineTo(x, h - 16 * DPR);
-                meterCx.stroke();
-                meterCx.fillStyle = 'rgba(74,90,122,0.9)';
-                meterCx.fillText((db === 0 ? '0' : db) + '', x + 2 * DPR, h - 2 * DPR);
-            }
-            const lvlW = meterPos(rms) * bw;
-            const grad = meterCx.createLinearGradient(x0, 0, x1, 0);
-            grad.addColorStop(0, 'rgba(0,221,102,0.85)');
-            grad.addColorStop(0.6, 'rgba(245,181,46,0.85)');
-            grad.addColorStop(1, 'rgba(255,77,77,0.9)');
-            meterCx.fillStyle = grad;
-            meterCx.fillRect(x0, 6 * DPR, lvlW, h - 24 * DPR);
-            meterCx.fillStyle = 'rgb(' + R + ',' + G + ',' + B + ')';
-            meterCx.fillRect(x0 + lvlW - 2 * DPR, 6 * DPR, 2 * DPR, h - 24 * DPR);
-            if (peakHeldDb > METER_MIN) {
-                const px = x0 + meterPos(peakHeldDb) * bw;
-                meterCx.fillStyle = '#F3EEC3';
-                meterCx.fillRect(px - 1.5 * DPR, 4 * DPR, 3 * DPR, h - 20 * DPR);
-            }
-            if (floorDb !== null) {
-                const fx = x0 + meterPos(floorDb) * bw;
-                meterCx.strokeStyle = 'rgba(0,221,102,0.9)';
-                meterCx.lineWidth = 2 * DPR;
-                meterCx.setLineDash([4 * DPR, 3 * DPR]);
-                meterCx.beginPath();
-                meterCx.moveTo(fx, 2 * DPR);
-                meterCx.lineTo(fx, h - 16 * DPR);
-                meterCx.stroke();
-                meterCx.setLineDash([]);
-            }
-        }
-
-        // ===========================================================================
-        // LOG + WIRING
-        // ===========================================================================
-        function log(msg, cls) {
-            $('log').innerHTML = cls ? '<span class="' + cls + '">' + msg + '</span>' : msg;
-        }
-
-        function setMode(newMode) {
-            mode = newMode;
-            // update mode buttons
-            const buttons = $('modeRow').querySelectorAll('.mode-btn');
-            buttons.forEach(b => {
-                b.classList.remove('active', 'tuner-act', 'spec-act', 'scope-act', 'res-act', 'voice-act',
-                    'imp-act');
-                if (b.dataset.mode === mode) {
-                    b.classList.add('active');
-                    if (modeClasses[mode]) b.classList.add(modeClasses[mode]);
-                }
-            });
-            // update labels
-            const labels = {
-                'tuner': 'Tuner · note + cents + frequency',
-                'spectrum': 'Spectrum · full-range FFT view',
-                'oscilloscope': 'Oscilloscope · waveform',
-                'resonance': 'Resonance · dominant peaks + harmonics',
-                'voice': 'Voice · pitch + range estimation',
-                'impulse': 'Impulse · transient detection'
-            };
-            const specLabels = {
-                'tuner': 'Spectrum · log frequency',
-                'spectrum': 'Spectrum details · log frequency',
-                'oscilloscope': 'Spectrum · log frequency',
-                'resonance': 'Peak detail · harmonic markers',
-                'voice': 'Spectrum · voice formants',
-                'impulse': 'Spectrum · transient response'
-            };
-            $('scopeLabel').textContent = labels[mode] || labels['tuner'];
-            $('specLabel').textContent = specLabels[mode] || specLabels['tuner'];
-            // reset mode-specific state
-            if (mode === 'voice') { voiceMinPitch = Infinity;
-                voiceMaxPitch = -Infinity;
-                voicePitchHistory = []; }
-            if (mode === 'impulse') { impulseCount = 0;
-                recentImpulses = [];
-                impulseFlash = 0;
-                rollingRms = -60; }
-            updateModeData();
-            log('Switched to <b>' + mode.toUpperCase() + '</b> mode.');
-        }
-
-        window.addEventListener('load', () => {
-            scopeCv = $('scope');
-            scopeCx = scopeCv.getContext('2d');
-            specCv = $('spectrum');
-            specCx = specCv.getContext('2d');
-            meterCv = $('meter');
-            meterCx = meterCv.getContext('2d');
-            sizeAll();
-            window.addEventListener('resize', sizeAll);
-            window.addEventListener('orientationchange', () => setTimeout(sizeAll, 200));
-            $('btnMic').addEventListener('click', () => running ? stopMic() : startMic());
-            $('btnCal').addEventListener('click', () => { if (!calibrating) startCal(); });
-            $('btnPeak').addEventListener('click', () => { peakHeldDb = DB_FLOOR;
-                log('Peak hold reset.'); });
-            $('btnFreeze').addEventListener('click', () => {
-                if (!running) return;
-                frozen = !frozen;
-                $('btnFreeze').classList.toggle('armed', frozen);
-                $('btnFreeze').textContent = frozen ? 'RESUME' : 'FREEZE';
-                $('stxt').textContent = frozen ? 'FROZEN' : 'LISTENING';
-            });
-            // mode buttons
-            const modeButtons = $('modeRow').querySelectorAll('.mode-btn');
-            modeButtons.forEach(b => {
-                b.addEventListener('click', () => {
-                    const newMode = b.dataset.mode;
-                    if (newMode && newMode !== mode) setMode(newMode);
-                });
-            });
-            updateModeData();
-            requestAnimationFrame(frame);
-        });
-    </script>
+/* ───────── boot ───────── */
+buildUI();
+new ResizeObserver(layout).observe($('view'));
+document.addEventListener('gesturestart',e=>e.preventDefault());
+layout();
+setSource(testCard(),'test card');
+encode();
+})();
+</script>
 </body>
 </html>
