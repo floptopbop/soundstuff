@@ -92,6 +92,7 @@ select{width:100%;height:24px;font:inherit;font-size:11px;color:var(--ink);
     <button class="b p" id="bPlay">Play</button>
     <button class="b" id="bEnc">Encode</button>
     <button class="b" id="bMic">Mic</button>
+    <button class="b" id="bFile">Load WAV</button>
     <label class="auto"><input type="checkbox" id="auto">Auto</label>
     <span id="tm">0.0 / 0.0 s</span>
   </div>
@@ -104,6 +105,7 @@ select{width:100%;height:24px;font:inherit;font-size:11px;color:var(--ink);
 
 <input type="file" id="fImg" accept="image/*" hidden>
 <input type="file" id="fAud" accept="audio/*,video/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,.mov" hidden>
+<input type="file" id="fWav" accept="audio/*" hidden>
 
 <script>
 (()=>{
@@ -739,6 +741,7 @@ function savePng(){
 
 /* ───────── live mic ───────── */
 let live=false, micBusy=false, liveSR=44100, micStream=null, micSrc=null, micNode=null, micSink=null, workletReady=false;
+let wavSource=null, wavPlaying=false, wavStartTime=0, wavBuffer=null, wavDur=0, wavPlaySR=44100;
 let recChunks=[], recLen=0, recFull=false;
 const RMASK=32767, fring=new Float32Array(RMASK+1);
 let totalW=0, nextEnd=0, hopS=1323, sring=new Float32Array(88200);
@@ -1007,7 +1010,9 @@ function liveHud(a,b){
   if(w.length) b.textContent=' · '+w.join(' · ');
 }
 $('bMic').addEventListener('click',()=>{ if(live) stopMic(); else startMic(); });
-window.addEventListener('pagehide',()=>{ closeStream(); });
+$('bFile').addEventListener('click',()=>{ $('fWav').click(); });
+$('fWav').addEventListener('change',e=>{ const f=e.target.files[0]; if(f) loadAndPlayWav(f); });
+window.addEventListener('pagehide',()=>{ closeStream(); stopWav(); });
 
 /* ───────── analysis: stats, peaks, average spectrum ───────── */
 function findPeaks(avgP,sr,N,maxN){
@@ -1107,6 +1112,98 @@ function saveStats(){
   if(live){setHudWarn('stop the mic to save');return;}
   refreshStats(); if(!lastStats) return;
   dl(new Blob([JSON.stringify(lastStats,null,2)],{type:'application/json'}),'spectro_stats.json');
+}
+
+/* ───────── WAV file playback ───────── */
+let wavAnalyser=null, wavAnimId=0;
+async function loadAndPlayWav(file){
+  try{
+    if(live) stopMic(); stopWav();
+    const buf=await file.arrayBuffer();
+    wavBuffer=await ac.decodeAudioData(buf);
+    wavDur=wavBuffer.duration;
+    wavPlaySR=wavBuffer.sampleRate;
+    initLiveForWav();
+    playWav();
+  }catch(e){
+    setHudWarn('error loading WAV');
+    console.error(e);
+  }
+}
+function initLiveForWav(){
+  const N=+P.fft;
+  lN=N; lbins=N/2+1;
+  lcols=Math.round(wavDur/(N/wavPlaySR)*1.2)+20;
+  lhead=0; lframes=0;
+  lhist=new Float32Array(lcols*lbins);
+  lcv=null;
+  liveSR=wavPlaySR;
+  live=true;
+}
+function playWav(){
+  if(!wavBuffer||wavPlaying) return;
+  stopWav();
+  wavSource=ac.createBufferSource();
+  wavSource.buffer=wavBuffer;
+  wavAnalyser=ac.createAnalyser();
+  wavAnalyser.fftSize=+P.fft*2;
+  wavAnalyser.smoothingTimeConstant=0;
+  wavSource.connect(wavAnalyser);
+  wavAnalyser.connect(ac.destination);
+  wavPlaying=true;
+  wavStartTime=ac.currentTime;
+  wavSource.start(0);
+  wavSource.onended=()=>{wavPlaying=false;live=false;};
+  setHudWarn('');
+  updateWavAnalysis();
+}
+function stopWav(){
+  if(wavSource) try{wavSource.stop()}catch(e){}
+  wavSource=null; wavPlaying=false; wavBuffer=null; wavAnalyser=null;
+  cancelAnimationFrame(wavAnimId);
+  live=false;
+}
+function updateWavAnalysis(){
+  if(!wavPlaying||!wavAnalyser) return;
+  const data=new Uint8Array(lbins);
+  wavAnalyser.getByteFrequencyData(data);
+  const o=(lhead%lcols)*lbins;
+  for(let i=0;i<lbins;i++){
+    lhist[o+i]=10*Math.log10(Math.pow(data[i]/255,2)+1e-10)-20;
+  }
+  lhead++; if(lhead%lcols===0) lhead=0;
+  lframes=Math.min(lframes+1,lcols);
+  refreshLiveDisplay();
+  updateWavTime();
+  wavAnimId=requestAnimationFrame(updateWavAnalysis);
+}
+function refreshLiveDisplay(){
+  if(!lcv||lcv.width!==1200||lcv.height!==plot.h){
+    lcv=document.createElement('canvas');
+    lcv.width=1200; lcv.height=plot.h;
+  }
+  const sx=lcv.getContext('2d'), W=lcv.width, H=lcv.height;
+  sx.fillStyle='#000'; sx.fillRect(0,0,W,H);
+  const [fa,fb]=viewRange(), log=P.vscale==='log', rng=+P.vrange, lut=makeLUT();
+  for(let col=0;col<lframes;col++){
+    const fx=Math.round((col/Math.max(1,lframes-1))*W);
+    const src=(lhead+lcols-lframes+col)%lcols;
+    for(let b=0;b<lbins;b++){
+      const v=lhist[src*lbins+b], fr=freqAtFrac(b/(lbins-1),fa,fb);
+      const fy=log?Math.log(fr/fa)/Math.log(fb/fa):(fr-fa)/(fb-fa);
+      if(fy<0||fy>1) continue;
+      const y=Math.round((1-fy)*(H-1));
+      const t=(v+rng)/rng, c=lut[t<=0?0:t>=1?255:(t*255)|0];
+      const r=(c&0xFF), g=((c>>8)&0xFF), b=((c>>16)&0xFF);
+      sx.fillStyle='rgb('+r+','+g+','+b+')';
+      sx.fillRect(fx,y,1,1);
+    }
+  }
+  draw();
+}
+function updateWavTime(){
+  const elapsed=ac.currentTime-wavStartTime;
+  $('tm').textContent=(elapsed.toFixed(1))+' / '+(wavDur.toFixed(1))+' s';
 }
 
 /* ───────── boot ───────── */
