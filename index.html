@@ -17,23 +17,43 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
 #app{display:flex;flex-direction:column;height:100%;
   padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
 
-header{display:flex;align-items:baseline;gap:8px;padding:5px 10px 3px;flex:none}
-header .ttl{font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--ink)}
-header .deco{font-size:11px;color:var(--dim)}
+header{display:flex;align-items:center;gap:8px;padding:4px 10px 3px;flex:none}
+#vsw{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;flex:none}
+#vsw button{font:inherit;font-size:10.5px;color:var(--dim);background:var(--panel2);border:0;padding:3px 9px;touch-action:manipulation}
+#vsw button+button{border-left:1px solid var(--line)}
+#vsw button.on{color:var(--accent);background:#2a2230}
+header .ttl{white-space:nowrap;font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--ink)}
+header .deco{white-space:nowrap;font-size:11px;color:var(--dim)}
 header #srcname{margin-left:auto;color:var(--dim);font-size:10px;white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis;max-width:48%}
+  overflow:hidden;text-overflow:ellipsis;max-width:34%}
+.chip{font:inherit;font-size:10px;color:var(--dim);background:var(--panel2);border:1px solid var(--line);border-radius:4px;
+  padding:3px 7px;flex:none;white-space:nowrap;touch-action:manipulation}
+/* full screen: just the plate — header, transport and deck step aside */
+body.fs header,body.fs #transport,body.fs #deck{display:none}
+#fsBar{display:none;position:absolute;right:6px;bottom:6px;gap:4px;z-index:3;opacity:.4;transition:opacity .2s}
+#fsBar:active,#fsBar:hover{opacity:.9}
+body.fs #fsBar{display:flex}
 
 #view{position:relative;flex:1;min-height:0}
-#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#cv{position:absolute;top:0;left:0;width:100%;height:100%;display:block;touch-action:none}
+#pcv{position:absolute;left:0;top:0;width:100%;display:block;touch-action:none}
+body.vplate .sv{display:none}
+body:not(.vplate) .pv{display:none}
+.b.s{height:20px;padding:0 7px;font-size:10px}
+.b.on{background:#3a2f22;border-color:var(--accent);color:var(--accent)}
+#snapOv{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,9,13,.94);display:none;
+  flex-direction:column;align-items:center;justify-content:center;z-index:50}
+#snapOv img{max-width:94%;max-height:82%;-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto}
+#snapOv div{color:var(--dim);font-size:10px;margin-top:10px}
 #hud{position:absolute;left:8px;right:8px;top:1px;height:16px;line-height:16px;
   font:10px ui-monospace,Menlo,monospace;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;color:var(--dim);pointer-events:none}
 #hud .w{color:var(--warn)}
 
-#transport{display:flex;align-items:center;gap:6px;padding:4px 8px;flex:none;
+#transport{display:flex;align-items:center;gap:3px;padding:4px 5px;overflow-x:auto;scrollbar-width:none;flex:none;
   border-top:1px solid var(--line);background:var(--panel)}
 #tm{margin-left:auto;font:10px ui-monospace,Menlo,monospace;color:var(--dim);white-space:nowrap}
-.b{height:26px;padding:0 10px;font:inherit;font-size:11px;color:var(--ink);
+.b{height:26px;padding:0 5px;white-space:nowrap;flex:none;font-size:10.5px;font:inherit;font-size:11px;color:var(--ink);
   background:var(--panel2);border:1px solid var(--line);border-radius:4px;
   touch-action:manipulation;cursor:pointer}
 .b:active{background:#2a2633}
@@ -44,11 +64,12 @@ header #srcname{margin-left:auto;color:var(--dim);font-size:10px;white-space:now
 
 #deck{flex:none;max-height:30vh;display:flex;flex-direction:column;
   background:var(--panel);border-top:1px solid var(--line)}
-#tabs{display:flex;height:26px;flex:none;align-items:stretch}
-.tab{flex:0 0 auto;padding:0 9px;border:0;background:transparent;color:var(--dim);
+#tabs{display:flex;height:26px;flex:none;align-items:stretch;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;white-space:nowrap;padding:0 8px;border:0;background:transparent;color:var(--dim);
   font:inherit;font-size:11px;border-bottom:2px solid transparent;touch-action:manipulation}
 .tab.on{color:var(--accent);border-bottom-color:var(--accent)}
-#fold{margin-left:auto;width:34px;border:0;background:transparent;color:var(--dim);font-size:12px}
+#fold{margin-left:auto;flex:0 0 34px;width:34px;border:0;position:sticky;right:0;background:var(--panel);color:var(--dim);font-size:12px}
 #body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 10px 8px}
 #deck.collapsed #body{display:none}
 .pane{display:none;grid-template-columns:1fr 1fr;gap:5px 14px;align-content:start}
@@ -82,19 +103,26 @@ select{width:100%;height:24px;font:inherit;font-size:11px;color:var(--ink);
 <body>
 <div id="app">
   <header>
-    <span class="ttl">Spectro Art</span><span class="deco">音画</span>
+    <div id="vsw"><button data-v="plate" class="on">Plate</button><button data-v="spectro">Spectro</button></div>
+    <span class="ttl">Spectro Art</span><span class="deco">音画 · 砂</span>
     <span id="srcname"></span>
+    <button class="chip pv" id="bFull">Full</button>
   </header>
 
-  <div id="view"><canvas id="cv"></canvas><div id="hud"></div></div>
+  <div id="view"><canvas id="cv"></canvas><canvas id="pcv"></canvas><div id="hud"></div><div id="fsBar"><button class="chip" id="fsSnap">Snap</button><button class="chip" id="fsExit">Exit full screen</button></div></div>
 
   <div id="transport">
     <button class="b p" id="bPlay">Play</button>
-    <button class="b" id="bEnc">Encode</button>
+    <button class="b sv" id="bEnc">Encode</button>
     <button class="b" id="bMic">Mic</button>
-    <button class="b" id="bFile">Load WAV</button>
-    <label class="auto"><input type="checkbox" id="auto">Auto</label>
-    <span id="tm">0.0 / 0.0 s</span>
+    <button class="b" id="bFile">Load</button>
+    <button class="b pv" id="bHold">Hold</button>
+    <button class="b pv" id="bScat">Scatter</button>
+    <button class="b pv" id="bWipe">Wipe</button>
+    <button class="b pv" id="bSend">To image</button>
+    <button class="b" id="bSnap">Snap</button>
+    <label class="auto sv"><input type="checkbox" id="auto">Auto</label>
+    <span id="tm" class="sv">0.0 / 0.0 s</span>
   </div>
 
   <div id="deck">
@@ -105,7 +133,7 @@ select{width:100%;height:24px;font:inherit;font-size:11px;color:var(--ink);
 
 <input type="file" id="fImg" accept="image/*" hidden>
 <input type="file" id="fAud" accept="audio/*,video/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,.mov" hidden>
-<input type="file" id="fWav" accept="audio/*" hidden>
+<div id="snapOv"><img id="snapImg" alt="snapshot"><div>Long-press to save · tap outside to close</div></div>
 
 <script>
 (()=>{
@@ -114,7 +142,8 @@ const $=id=>document.getElementById(id);
 const cv=$('cv'), g=cv.getContext('2d');
 
 /* ───────── controls ───────── */
-const TABS=[['image','Image'],['tones','Tones'],['levels','Levels'],['view','View'],['mic','Mic'],['stats','Stats'],['file','File']];
+const PLATE_TABS=['plate','grains','memory'];
+const TABS=[['plate','Plate'],['grains','Grains'],['memory','Memory'],['image','Image'],['tones','Tones'],['levels','Levels'],['view','View'],['mic','Mic'],['stats','Stats'],['file','File']];
 const OPT_FFT=[['512','512'],['1024','1024'],['2048','2048'],['4096','4096'],['8192','8192']];
 const C=[
  // image → matrix
@@ -156,6 +185,55 @@ const C=[
  {tab:'mic',k:'lmax',t:'Max recording',min:10,max:600,step:10,def:120,cat:'draw',f:v=>v+' s'},
  {tab:'mic',k:'lraw',t:'Raw input (no auto-gain, no noise cut)',ty:'check',def:true,cat:'live'},
  {tab:'mic',k:'lfreeze',t:'Freeze display',ty:'check',def:false,cat:'draw'},
+ // plate (Chladni) — cat 'plate' routes to PLATE.set(key without 'pl_')
+ {tab:'plate',k:'pl_shape',t:'Shape',ty:'select',opts:[['square','Square'],['rect','Rectangle'],['circle','Circle']],def:'square',cat:'plate'},
+ {tab:'plate',k:'pl_material',t:'Material',ty:'select',opts:[['steel','Steel'],['brass','Brass'],['aluminium','Aluminium'],['glass','Glass']],def:'steel',cat:'plate'},
+ {tab:'plate',k:'pl_pitch',t:'Mode pitches',ty:'select',opts:[['physical','From material'],['manual','Manual (lowest mode)']],def:'physical',cat:'plate'},
+ {tab:'plate',k:'pl_f0',t:'Lowest mode (manual)',min:10,max:400,step:1,def:60,cat:'plate',f:v=>v+' Hz'},
+ {tab:'plate',k:'pl_size',t:'Size (side or diameter)',min:5,max:80,step:.5,def:24,cat:'plate',f:v=>v+' cm'},
+ {tab:'plate',k:'pl_thick',t:'Thickness',min:.2,max:6,step:.05,def:1,cat:'plate',f:v=>(+v).toFixed(2)+' mm'},
+ {tab:'plate',k:'pl_mu',t:'Poisson μ',min:0,max:.45,step:.005,def:.29,cat:'plate',f:v=>(+v).toFixed(3)},
+ {tab:'plate',k:'pl_Q',t:'Resonance Q',min:2,max:200,step:1,def:14,cat:'plate'},
+ {tab:'plate',k:'pl_order',t:'Mode order',min:4,max:12,step:1,def:9,cat:'plate'},
+ {tab:'plate',k:'pl_aspect',t:'Aspect (rectangle)',min:.3,max:1,step:.01,def:.7,cat:'plate',f:v=>(+v).toFixed(2)},
+ {tab:'plate',k:'pl_gate',t:'Gate',min:-120,max:-30,step:1,def:-80,cat:'plate',f:v=>v+' dB'},
+ {tab:'plate',k:'pl_range',t:'Range',min:20,max:90,step:1,def:50,cat:'plate',f:v=>v+' dB'},
+ {tab:'plate',k:'pl_gain',t:'Gain',min:.1,max:4,step:.01,def:1.2,cat:'plate',f:v=>(+v).toFixed(2)},
+ {tab:'plate',k:'pl_peaks',t:'Peaks used',min:1,max:6,step:1,def:2,cat:'plate'},
+ {tab:'plate',k:'pl_smooth',t:'Smoothing',min:0,max:.97,step:.01,def:.6,cat:'plate',f:v=>(+v).toFixed(2)},
+ {tab:'plate',k:'pl_fmin',t:'Low cut',min:10,max:500,step:1,def:30,cat:'plate',f:v=>v+' Hz'},
+ {tab:'plate',k:'pl_fmax',t:'High cut',min:500,max:8000,step:10,def:3000,cat:'plate',f:v=>v+' Hz'},
+ {tab:'plate',k:'pl_tone',t:'Test tone into the plate',ty:'check',def:false,cat:'plate'},
+ {tab:'plate',k:'pl_toneOut',t:'Test tone audible',ty:'check',def:false,cat:'plate'},
+ {tab:'plate',k:'pl_toneHz',t:'Test tone',min:30,max:2000,step:1,def:220,cat:'plate',f:v=>v+' Hz'},
+ {tab:'grains',k:'pl_count',t:'Grains',min:1000,max:15000,step:500,def:6000,cat:'plate'},
+ {tab:'grains',k:'pl_powder',t:'Powder',min:0,max:60,step:1,def:15,cat:'plate',f:v=>v+'%'},
+ {tab:'grains',k:'pl_launch',t:'Launch',min:0,max:1.5,step:.01,def:.18,cat:'plate',f:v=>(+v).toFixed(2)},
+ {tab:'grains',k:'pl_bounce',t:'Bounce',min:0,max:40,step:.5,def:12,cat:'plate',f:v=>(+v).toFixed(1)},
+ {tab:'grains',k:'pl_drift',t:'Drift',min:0,max:150,step:1,def:30,cat:'plate'},
+ {tab:'grains',k:'pl_settle',t:'Settle',min:.05,max:.95,step:.01,def:.35,cat:'plate',f:v=>(+v).toFixed(2)},
+ {tab:'grains',k:'pl_ribs',t:'Ribs (König)',min:0,max:150,step:1,def:40,cat:'plate'},
+ {tab:'grains',k:'pl_grain',t:'Grain size',min:1,max:4,step:1,def:2,cat:'plate',f:v=>v+' px'},
+ {tab:'grains',k:'pl_field',t:'Field glow',min:0,max:1,step:.01,def:0,cat:'plate',f:v=>(+v).toFixed(2)},
+ {tab:'grains',k:'pl_strip',t:'Mode strip under the plate',ty:'check',def:true,cat:'plate'},
+ // dual memory — vibration memory (field) and sand aging (grains)
+ {tab:'memory',k:'pl_memory',t:'Vibration memory',ty:'check',def:true,cat:'plate'},
+ {tab:'memory',k:'pl_sandMemory',t:'Sand aging',ty:'check',def:true,cat:'plate'},
+ {tab:'memory',k:'pl_memPalette',t:'Memory colours',ty:'select',opts:[['spectro','Spectro colour map'],['original','Dual memory (original)']],def:'spectro',cat:'plate'},
+ {tab:'memory',k:'pl_memCell',t:'Memory cell size',min:1,max:8,step:1,def:2,cat:'plate',f:v=>v+' px'},
+ {tab:'memory',k:'pl_memCeil',t:'Colour ceiling',min:.3,max:1,step:.01,def:.82,cat:'plate',f:v=>(+v).toFixed(2)},
+ {tab:'memory',k:'pl_memScale',t:'Activity scale',min:.2,max:6,step:.05,def:2,cat:'plate',f:v=>(+v).toFixed(2)},
+ {tab:'memory',k:'pl_memRise',t:'Adapt rise rate',min:.05,max:10,step:.05,def:2.2,cat:'plate',f:v=>(+v).toFixed(2)+'/s'},
+ {tab:'memory',k:'pl_memFall',t:'Adapt fall rate',min:.01,max:5,step:.01,def:.28,cat:'plate',f:v=>(+v).toFixed(2)+'/s'},
+ {tab:'memory',k:'pl_memNovelty',t:'Novelty gain',min:0,max:10,step:.05,def:3.2,cat:'plate',f:v=>(+v).toFixed(2)},
+ {tab:'memory',k:'pl_memOnset',t:'Onset bonus',min:0,max:2,step:.01,def:.25,cat:'plate',f:v=>(+v).toFixed(2)},
+ {tab:'memory',k:'pl_memCharge',t:'Charge rate',min:0,max:6,step:.01,def:1.45,cat:'plate',f:v=>(+v).toFixed(2)+'/s'},
+ {tab:'memory',k:'pl_memDrain',t:'Drain rate',min:0,max:2,step:.01,def:.19,cat:'plate',f:v=>(+v).toFixed(2)+'/s'},
+ {tab:'memory',k:'pl_memAlpha',t:'Colour ramp',min:.1,max:3,step:.01,def:.92,cat:'plate',f:v=>(+v).toFixed(2)},
+ {tab:'memory',k:'pl_memOpacity',t:'Max opacity',min:0,max:1,step:.01,def:.78,cat:'plate',f:v=>(+v).toFixed(2)},
+ {tab:'memory',k:'pl_ageTime',t:'Darken time',min:2,max:180,step:1,def:34,cat:'plate',f:v=>v+' s'},
+ {tab:'memory',k:'pl_ageTravel',t:'Reset distance',min:.002,max:.06,step:.001,def:.012,cat:'plate',f:v=>(+v).toFixed(3)},
+ {tab:'memory',k:'pl_powderAge',t:'Powder ages too',ty:'check',def:false,cat:'plate'},
 ];
 const P={}, reg={};
 
@@ -198,6 +276,14 @@ function setParam(k,v){
   if(r.vEl) r.vEl.textContent=(r.c.f||(x=>x))(v);
 }
 function hit(c,final){
+  if(c.cat==='plate'){
+    const k=c.k.slice(3);
+    if((k==='tone'||k==='toneOut')&&P[c.k]) ensureCtx();
+    PLATE.set(k,P[c.k]);
+    if(k==='material') setParam('pl_mu',PLATE.P.mu);
+    if(k==='shape'||k==='aspect'||k==='strip') layout();
+    return;
+  }
   if(c.cat==='enc') markStale();
   else if(c.cat==='fft'){ if(final){ if(live) reconfigureLive(); else analyze(); } }
   else if(c.cat==='live'){ if(final) liveParamChanged(c.k); }
@@ -242,6 +328,8 @@ function buildUI(){
   n.textContent='WAV is the mono encoded sound. Play it through anything, then open it with Open audio to see the picture again.';
   pf.append(r2,n);
   r2.append(btn('Save stats JSON',saveStats));
+  const r3=document.createElement('div'); r3.className='row wide'; r3.append(btn('Reset all settings',resetState)); pf.append(r3);
+  const r4=document.createElement('div'); r4.className='row wide'; r4.append(btn('Reset all settings',resetState)); $('pane_memory').append(r4);
 
   // mic tab extras
   const pm=$('pane_mic');
@@ -258,9 +346,19 @@ function buildUI(){
   const rs=document.createElement('div'); rs.className='row wide'; rs.append(btn('Refresh',()=>refreshStats()));
   ps.append(rs);
 
-  showTab('image');
+  showTab('plate');
+}
+const lastTab={plate:'plate',spectro:'image'};
+function syncTabs(){
+  // only the open view's tabs are shown
+  for(const t of document.querySelectorAll('.tab')){
+    const isPlateTab=PLATE_TABS.includes(t.dataset.t);
+    t.style.display=(VIEW==='plate')===isPlateTab?'':'none';
+  }
+  showTab(lastTab[VIEW]);
 }
 function showTab(id){
+  lastTab[PLATE_TABS.includes(id)?'plate':'spectro']=id;
   for(const t of document.querySelectorAll('.tab')) t.classList.toggle('on',t.dataset.t===id);
   for(const p of document.querySelectorAll('.pane')) p.classList.toggle('on',p.id==='pane_'+id);
   if(id==='stats') refreshStats();
@@ -475,9 +573,17 @@ function makeLUT(){
 }
 
 /* ───────── layout / spectrogram image ───────── */
+// one view at a time, sharing the same screen (like alpha synth's scope modes)
+let VIEW='plate';
 function layout(){
   dpr=Math.min(2,window.devicePixelRatio||1);
-  const r=$('view').getBoundingClientRect();
+  const r=$('view').getBoundingClientRect(), pH=Math.max(1,Math.round(r.height)), pc=$('pcv');
+  const isPlate=VIEW==='plate';
+  document.body.classList.toggle('vplate',isPlate);
+  $('hud').style.display=isPlate?'none':'';
+  cv.style.display=isPlate?'none':'block'; cv.style.height=r.height+'px';
+  pc.style.display=isPlate?'block':'none'; pc.style.top='0px'; pc.style.height=pH+'px';
+  if(isPlate) PLATE.layout(r.width,pH,dpr,0);
   cv.width=Math.max(20,Math.round(r.width*dpr)); cv.height=Math.max(20,Math.round(r.height*dpr));
   const ml=Math.round(36*dpr), mt=Math.round(18*dpr), mr=Math.round(8*dpr), mb=Math.round(16*dpr);
   plot={x0:ml,y0:mt,w:cv.width-ml-mr,h:cv.height-mt-mb};
@@ -535,6 +641,7 @@ function paintSpec(){
 /* ───────── drawing ───────── */
 function niceStep(x){const p=Math.pow(10,Math.floor(Math.log10(x))),m=x/p;return(m<1.5?1:m<3.5?2:m<7.5?5:10)*p;}
 function fmtHz(f){return f>=1000?(+(f/1000).toFixed(2))+'k':String(Math.round(f));}
+let axisTicks=[];
 function draw(){
   if(!plot) return;
   const W=cv.width,H=cv.height,{x0,y0,w,h}=plot;
@@ -566,6 +673,17 @@ function draw(){
       g.fillText(fmtHz(f),x0-4*dpr,y);
       g.beginPath(); g.moveTo(x0-3*dpr,y); g.lineTo(P.grid?x0+w:x0,y); g.stroke();
     }
+    // plate modes the drive point can excite: brass ticks just inside the axis
+    axisTicks=[];
+    for(const m of PLATE.axisModes()){
+      if(m.f<fa||m.f>fb) continue;
+      const fr=log?Math.log(m.f/fa)/Math.log(fb/fa):(m.f-fa)/(fb-fa), y=Math.round(y0+(1-fr)*(h-1))+.5;
+      const on=PLATE.P.tone&&Math.abs(PLATE.P.toneHz-m.f)<0.01;
+      g.strokeStyle=on?'rgba(240,210,160,.95)':'rgba(212,165,116,'+(0.35+0.5*m.c).toFixed(2)+')';
+      g.beginPath(); g.moveTo(x0,y); g.lineTo(x0+(on?14:4+5*m.c)*dpr,y); g.stroke();
+      axisTicks.push({y,f:m.f,label:m.label});
+    }
+    g.strokeStyle='rgba(212,165,116,.15)';
     g.textAlign='center'; g.textBaseline='top';
     const ts=niceStep(dur/Math.max(2,w/(56*dpr)));
     for(let t=0;t<=dur+1e-6;t+=ts){
@@ -587,7 +705,8 @@ function draw(){
 }
 
 /* ───────── HUD ───────── */
-function setHudWarn(s){ $('hud').innerHTML=''; const w=document.createElement('span'); w.className='w'; w.textContent=s; $('hud').appendChild(w); }
+let lastWarn='', lastWarnT=0;
+function setHudWarn(s){ lastWarn=s; lastWarnT=performance.now(); $('hud').innerHTML=''; const w=document.createElement('span'); w.className='w'; w.textContent=s; $('hud').appendChild(w); }
 function refreshHUD(){
   const hud=$('hud'); hud.innerHTML='';
   const a=document.createElement('span'), b=document.createElement('span'); b.className='w';
@@ -631,6 +750,7 @@ function updateTime(){ $('tm').textContent=(cur?pos.toFixed(1)+' / '+cur.dur.toF
 /* ───────── playback ───────── */
 function ensureCtx(){
   if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+  PLATE.attach(actx);
   if(actx.state==='suspended') actx.resume();
 }
 function getBuf(){
@@ -644,7 +764,7 @@ function stopSource(){
 function startPlay(offset){
   if(!cur) return;
   ensureCtx(); stopSource();
-  const s=actx.createBufferSource(); s.buffer=getBuf(); s.connect(actx.destination);
+  const s=actx.createBufferSource(); s.buffer=getBuf(); s.connect(actx.destination); PLATE.tap(s);
   s.onended=()=>{ if(s===curSrc&&playing){ endPlay(); } };
   curSrc=s; s.start(0,Math.max(0,Math.min(offset,cur.dur-.01)));
   startAt=actx.currentTime-offset; pos=offset; playing=true;
@@ -687,7 +807,22 @@ function seekFromCursor(){
   const {x0,w}=plot; pos=Math.max(0,Math.min(1,(curs.x-x0)/(w-1)))*cur.dur;
   updateTime();
 }
+function axisTap(e){   // tap a brass tick in the axis gutter to play the plate's test tone at that mode
+  if(!plot||!axisTicks.length) return false;
+  const r=cv.getBoundingClientRect(), s=cv.width/r.width, x=(e.clientX-r.left)*s, y=(e.clientY-r.top)*s;
+  if(x>plot.x0+16*dpr) return false;
+  let best=null, bd=12*dpr;
+  for(const t of axisTicks){ const d=Math.abs(t.y-y); if(d<bd){bd=d;best=t;} }
+  if(!best) return false;
+  ensureCtx(); if(actx.state!=='running') actx.resume();
+  const off=PLATE.P.tone&&Math.abs(PLATE.P.toneHz-best.f)<0.01;
+  PLATE.set('toneHz',best.f); PLATE.set('toneOut',!off); PLATE.set('tone',!off);
+  setParam('pl_toneHz',Math.round(best.f)); setParam('pl_tone',!off); setParam('pl_toneOut',!off);
+  setHudWarn(off?'test tone off':'mode '+best.label+' · '+best.f.toFixed(1)+' Hz — tap again to stop');
+  draw(); return true;
+}
 cv.addEventListener('pointerdown',e=>{
+  if(axisTap(e)) return;
   if(!plot||(!cur&&!live)) return;
   cv.setPointerCapture(e.pointerId); curs.on=true; scrub=true; ptr(e); seekFromCursor(); refreshHUD(); draw();
 });
@@ -704,6 +839,7 @@ cv.addEventListener('pointercancel',pend);
 
 /* ───────── file I/O ───────── */
 $('fImg').addEventListener('change',e=>{const f=e.target.files[0];if(f)loadImageFile(f);e.target.value='';});
+let playAfterLoad=false;
 $('fAud').addEventListener('change',async e=>{
   const f=e.target.files[0]; e.target.value=''; if(!f) return;
   try{
@@ -717,7 +853,8 @@ $('fAud').addEventListener('change',async e=>{
     pos=0; $('srcname').textContent=f.name;
     setParam('vfit',false); setParam('vLo',0); setParam('vHi',Math.min(10000,buf.sampleRate/2));
     updateTime(); await analyze();
-  }catch(err){busyMsg='';setHudWarn('could not decode that file (try mp3, m4a, wav or a screen recording)');}
+    if(playAfterLoad){ playAfterLoad=false; startPlay(0); }
+  }catch(err){playAfterLoad=false;busyMsg='';setHudWarn('could not decode that file (try mp3, m4a, wav or a screen recording)');}
 });
 function dl(blob,name){
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
@@ -734,14 +871,10 @@ function saveWav(){
   for(let i=0;i<n;i++){const s=Math.max(-1,Math.min(1,d[i]));dv.setInt16(44+i*2,s<0?s*0x8000:s*0x7fff,true);}
   dl(new Blob([buf],{type:'audio/wav'}),'spectro_art.wav');
 }
-function savePng(){
-  const was=curs.on; curs.on=false; draw();
-  cv.toBlob(b=>{ if(b) dl(b,'spectro_art.png'); curs.on=was; });
-}
+function savePng(){ snapView(); }
 
 /* ───────── live mic ───────── */
 let live=false, micBusy=false, liveSR=44100, micStream=null, micSrc=null, micNode=null, micSink=null, workletReady=false;
-let wavSource=null, wavPlaying=false, wavStartTime=0, wavBuffer=null, wavDur=0, wavPlaySR=44100;
 let recChunks=[], recLen=0, recFull=false;
 const RMASK=32767, fring=new Float32Array(RMASK+1);
 let totalW=0, nextEnd=0, hopS=1323, sring=new Float32Array(88200);
@@ -791,6 +924,7 @@ async function openStream(){
   const d=$('mdev').value; if(d) a.deviceId={exact:d};
   micStream=await navigator.mediaDevices.getUserMedia({audio:a});
   micSrc=actx.createMediaStreamSource(micStream);
+  PLATE.tap(micSrc);
   await attachCapture();
 }
 function closeStream(){
@@ -1010,9 +1144,8 @@ function liveHud(a,b){
   if(w.length) b.textContent=' · '+w.join(' · ');
 }
 $('bMic').addEventListener('click',()=>{ if(live) stopMic(); else startMic(); });
-$('bFile').addEventListener('click',()=>{ $('fWav').click(); });
-$('fWav').addEventListener('change',e=>{ const f=e.target.files[0]; if(f) loadAndPlayWav(f); });
-window.addEventListener('pagehide',()=>{ closeStream(); stopWav(); });
+$('bFile').addEventListener('click',()=>{ ensureCtx(); playAfterLoad=true; $('fAud').click(); });
+window.addEventListener('pagehide',()=>{ closeStream(); });
 
 /* ───────── analysis: stats, peaks, average spectrum ───────── */
 function findPeaks(avgP,sr,N,maxN){
@@ -1114,105 +1247,873 @@ function saveStats(){
   dl(new Blob([JSON.stringify(lastStats,null,2)],{type:'application/json'}),'spectro_stats.json');
 }
 
-/* ───────── WAV file playback ───────── */
-let wavAnalyser=null, wavAnimId=0;
-async function loadAndPlayWav(file){
-  try{
-    if(live) stopMic(); stopWav();
-    const buf=await file.arrayBuffer();
-    wavBuffer=await ac.decodeAudioData(buf);
-    wavDur=wavBuffer.duration;
-    wavPlaySR=wavBuffer.sampleRate;
-    initLiveForWav();
-    playWav();
-  }catch(e){
-    setHudWarn('error loading WAV');
-    console.error(e);
+
+/* ───────── PLATE — Chladni sand plate (from CHLADNI LIVE b2) ─────────
+   Rayleigh, Scientific Papers vol. VI §357 (Ritz free square plate), free-edge
+   disc, Savart sand (Theory of Sound §262) and König ribs (§253b).
+   It listens through its own analyser, which every sound in this tool is
+   tapped into: live mic, encoded image playback and loaded audio files. */
+const PLATE=(()=>{
+const MATERIALS = {
+  steel:     { E: 200e9, rho: 7850, mu: 0.29 },
+  brass:     { E: 100e9, rho: 8500, mu: 0.34 },
+  aluminium: { E: 69e9,  rho: 2700, mu: 0.33 },
+  glass:     { E: 70e9,  rho: 2500, mu: 0.225 }
+};
+const P = {
+  gate: -80, range: 50, gain: 1.2, peaks: 2, smooth: 0.6, fmin: 30, fmax: 3000,
+  shape: 'square', pitch: 'physical', material: 'steel', size: 24, thick: 1.0, mu: 0.29, f0: 60,
+  Q: 14, order: 9, aspect: 0.7, dx: 0.5, dy: 0.5,
+  count: 6000, powder: 15, launch: 0.18, bounce: 12, drift: 30, settle: 0.35, ribs: 40, grain: 2,
+  field: 0, strip: true, tone: false, toneOut: false, toneHz: 220,
+  // dual memory (NC, Dual Memory Test 02)
+  memory: true, memScale: 2, memRise: 2.2, memFall: 0.28, memNovelty: 3.2, memOnset: 0.25,
+  memCharge: 1.45, memDrain: 0.19, memOpacity: 0.78, memAlpha: 0.92,
+  sandMemory: true, ageTravel: 0.012, ageTime: 34, powderAge: false, memPalette: 'spectro', memCeil: 0.82, memCell: 2
+};
+
+const N = 96, NN = N * N, BMAX = 12, CNMAX = 8, CSMAX = 4, CRES = 512;
+
+/* ---- free-free bar normal functions on x∈[−1,1] (Ritz basis) ---- */
+const NS = 2001, KAP = new Float64Array(BMAX + 1), BN = new Float64Array(BMAX + 1);
+function rootBeam(m) {
+  const g = m % 2 === 0 ? k => Math.sin(k) + Math.cos(k) * Math.tanh(k)    // tan κ + tanh κ = 0
+                        : k => Math.sin(k) - Math.cos(k) * Math.tanh(k);   // tan κ − tanh κ = 0
+  const c = (2 * m - 1) * Math.PI / 4;
+  let a = c - 0.4, b = c + 0.4, ga = g(a);
+  for (let it = 0; it < 80; it++) { const mid = (a + b) / 2, gm = g(mid); if ((gm > 0) === (ga > 0)) { a = mid; ga = gm; } else b = mid; }
+  return (a + b) / 2;
+}
+function braw(m, x, d) {
+  if (m === 0) return d === 0 ? 1 : 0;
+  if (m === 1) return d === 0 ? x : d === 1 ? 1 : 0;
+  const k = KAP[m];
+  if (m % 2 === 0) {
+    const ck = Math.cos(k), chk = Math.cosh(k);
+    if (d === 0) return Math.cos(k * x) / ck + Math.cosh(k * x) / chk;
+    if (d === 1) return k * (-Math.sin(k * x) / ck + Math.sinh(k * x) / chk);
+    return k * k * (-Math.cos(k * x) / ck + Math.cosh(k * x) / chk);
   }
+  const sk = Math.sin(k), shk = Math.sinh(k);
+  if (d === 0) return Math.sin(k * x) / sk + Math.sinh(k * x) / shk;
+  if (d === 1) return k * (Math.cos(k * x) / sk + Math.cosh(k * x) / shk);
+  return k * k * (-Math.sin(k * x) / sk + Math.sinh(k * x) / shk);
 }
-function initLiveForWav(){
-  const N=+P.fft;
-  lN=N; lbins=N/2+1;
-  lcols=Math.round(wavDur/(N/wavPlaySR)*1.2)+20;
-  lhead=0; lframes=0;
-  lhist=new Float32Array(lcols*lbins);
-  lcv=null;
-  liveSR=wavPlaySR;
-  live=true;
-}
-function playWav(){
-  if(!wavBuffer||wavPlaying) return;
-  stopWav();
-  wavSource=ac.createBufferSource();
-  wavSource.buffer=wavBuffer;
-  wavAnalyser=ac.createAnalyser();
-  wavAnalyser.fftSize=+P.fft*2;
-  wavAnalyser.smoothingTimeConstant=0;
-  wavSource.connect(wavAnalyser);
-  wavAnalyser.connect(ac.destination);
-  wavPlaying=true;
-  wavStartTime=ac.currentTime;
-  wavSource.start(0);
-  wavSource.onended=()=>{wavPlaying=false;live=false;};
-  setHudWarn('');
-  updateWavAnalysis();
-}
-function stopWav(){
-  if(wavSource) try{wavSource.stop()}catch(e){}
-  wavSource=null; wavPlaying=false; wavBuffer=null; wavAnalyser=null;
-  cancelAnimationFrame(wavAnimId);
-  live=false;
-}
-function updateWavAnalysis(){
-  if(!wavPlaying||!wavAnalyser) return;
-  const data=new Uint8Array(lbins);
-  wavAnalyser.getByteFrequencyData(data);
-  const o=(lhead%lcols)*lbins;
-  for(let i=0;i<lbins;i++){
-    lhist[o+i]=10*Math.log10(Math.pow(data[i]/255,2)+1e-10)-20;
+function ub(m, x, d) { return BN[m] * braw(m, x, d); }
+const IA = [], IC = [], ID = [];        // ∫u''u'', ∫u''u, ∫u'u'
+(function () {
+  const F = [], F1 = [], F2 = [], h = 2 / (NS - 1);
+  const simp = fn => { let s = fn(0) + fn(NS - 1); for (let i = 1; i < NS - 1; i++) s += (i % 2 ? 4 : 2) * fn(i); return s * h / 3; };
+  for (let m = 0; m <= BMAX; m++) {
+    if (m >= 2) KAP[m] = rootBeam(m);
+    BN[m] = 1;
+    const f = new Float64Array(NS), f1 = new Float64Array(NS), f2 = new Float64Array(NS);
+    for (let i = 0; i < NS; i++) { const x = -1 + i * h; f[i] = braw(m, x, 0); f1[i] = braw(m, x, 1); f2[i] = braw(m, x, 2); }
+    const nr = 1 / Math.sqrt(simp(i => f[i] * f[i]));
+    BN[m] = nr;
+    for (let i = 0; i < NS; i++) { f[i] *= nr; f1[i] *= nr; f2[i] *= nr; }
+    F.push(f); F1.push(f1); F2.push(f2);
   }
-  lhead++; if(lhead%lcols===0) lhead=0;
-  lframes=Math.min(lframes+1,lcols);
-  refreshLiveDisplay();
-  updateWavTime();
-  wavAnimId=requestAnimationFrame(updateWavAnalysis);
-}
-function refreshLiveDisplay(){
-  if(!lcv||lcv.width!==1200||lcv.height!==plot.h){
-    lcv=document.createElement('canvas');
-    lcv.width=1200; lcv.height=plot.h;
-  }
-  const sx=lcv.getContext('2d'), W=lcv.width, H=lcv.height;
-  sx.fillStyle='#000'; sx.fillRect(0,0,W,H);
-  const [fa,fb]=viewRange(), log=P.vscale==='log', rng=+P.vrange, lut=makeLUT();
-  for(let col=0;col<lframes;col++){
-    const fx=Math.round((col/Math.max(1,lframes-1))*W);
-    const src=(lhead+lcols-lframes+col)%lcols;
-    for(let b=0;b<lbins;b++){
-      const v=lhist[src*lbins+b], fr=freqAtFrac(b/(lbins-1),fa,fb);
-      const fy=log?Math.log(fr/fa)/Math.log(fb/fa):(fr-fa)/(fb-fa);
-      if(fy<0||fy>1) continue;
-      const y=Math.round((1-fy)*(H-1));
-      const t=(v+rng)/rng, c=lut[t<=0?0:t>=1?255:(t*255)|0];
-      const r=(c&0xFF), g=((c>>8)&0xFF), b=((c>>16)&0xFF);
-      sx.fillStyle='rgb('+r+','+g+','+b+')';
-      sx.fillRect(fx,y,1,1);
+  for (let m = 0; m <= BMAX; m++) {
+    IA.push(new Float64Array(BMAX + 1)); IC.push(new Float64Array(BMAX + 1)); ID.push(new Float64Array(BMAX + 1));
+    for (let p = 0; p <= BMAX; p++) {
+      if ((m + p) % 2) continue;   // opposite parity integrals vanish
+      IA[m][p] = simp(i => F2[m][i] * F2[p][i]);
+      IC[m][p] = simp(i => F2[m][i] * F[p][i]);
+      ID[m][p] = simp(i => F1[m][i] * F1[p][i]);
     }
   }
-  draw();
+})();
+const UX = [];   // UX[p][i] = u_p at grid column/row i
+for (let p = 0; p <= BMAX; p++) {
+  const a = new Float32Array(N);
+  for (let i = 0; i < N; i++) a[i] = ub(p, 2 * (i + 0.5) / N - 1, 0);
+  UX.push(a);
 }
-function updateWavTime(){
-  const elapsed=ac.currentTime-wavStartTime;
-  $('tm').textContent=(elapsed.toFixed(1))+' / '+(wavDur.toFixed(1))+' s';
+
+/* ---- symmetric eigen solver (cyclic Jacobi) ---- */
+function jacobi(A, n) {
+  const V = new Float64Array(n * n);
+  for (let i = 0; i < n; i++) V[i * n + i] = 1;
+  for (let sweep = 0; sweep < 80; sweep++) {
+    let off = 0, dia = 0;
+    for (let p = 0; p < n; p++) { dia += A[p * n + p] * A[p * n + p]; for (let q = p + 1; q < n; q++) off += A[p * n + q] * A[p * n + q]; }
+    if (off <= 1e-24 * (dia + 1e-30)) break;
+    for (let p = 0; p < n - 1; p++) for (let q = p + 1; q < n; q++) {
+      const apq = A[p * n + q];
+      if (Math.abs(apq) < 1e-300) continue;
+      const th = (A[q * n + q] - A[p * n + p]) / (2 * apq);
+      const t = (th >= 0 ? 1 : -1) / (Math.abs(th) + Math.sqrt(th * th + 1));
+      const c = 1 / Math.sqrt(t * t + 1), s = t * c;
+      for (let k = 0; k < n; k++) { const kp = A[k * n + p], kq = A[k * n + q]; A[k * n + p] = c * kp - s * kq; A[k * n + q] = s * kp + c * kq; }
+      for (let k = 0; k < n; k++) { const pk = A[p * n + k], qk = A[q * n + k]; A[p * n + k] = c * pk - s * qk; A[q * n + k] = s * pk + c * qk; }
+      for (let k = 0; k < n; k++) { const kp = V[k * n + p], kq = V[k * n + q]; V[k * n + p] = c * kp - s * kq; V[k * n + q] = s * kp + c * kq; }
+    }
+  }
+  const vals = new Float64Array(n); for (let i = 0; i < n; i++) vals[i] = A[i * n + i];
+  return { vals, V };
+}
+
+/* ---- Bessel functions for the free disc ---- */
+const BT = 96, BTAU = new Float64Array(BT), BSIN = new Float64Array(BT);
+for (let m = 0; m < BT; m++) { BTAU[m] = Math.PI * (m + 0.5) / BT; BSIN[m] = Math.sin(BTAU[m]); }
+function Jx(n, x) {
+  if (n < 0) return (n % 2 ? -1 : 1) * Jx(-n, x);
+  let s = 0; for (let m = 0; m < BT; m++) s += Math.cos(n * BTAU[m] - x * BSIN[m]); return s / BT;
+}
+function Ix(n, x) {
+  if (n < 0) n = -n;
+  let term = 1; for (let i = 1; i <= n; i++) term *= (x / 2) / i;
+  let s = term; const q = x * x / 4;
+  for (let m = 1; m < 300; m++) { term *= q / (m * (m + n)); s += term; if (term < s * 1e-17) break; }
+  return s;
+}
+function freeDisc(n, k, mu) {   // edge moment and edge shear rows for J and I parts at r = 1
+  const J = Jx(n, k), Jp = n === 0 ? -Jx(1, k) : 0.5 * (Jx(n - 1, k) - Jx(n + 1, k));
+  const I = Ix(n, k), Ip = n === 0 ? Ix(1, k) : 0.5 * (Ix(n - 1, k) + Ix(n + 1, k));
+  const Jpp = -Jp / k - (1 - n * n / (k * k)) * J, Ipp = -Ip / k + (1 + n * n / (k * k)) * I;
+  const MJ = k * k * Jpp + mu * (k * Jp - n * n * J), MI = k * k * Ipp + mu * (k * Ip - n * n * I);
+  const VJ = -k * k * k * Jp - (1 - mu) * n * n * (k * Jp - J), VI = k * k * k * Ip - (1 - mu) * n * n * (k * Ip - I);
+  return { MJ, MI, VJ, VI, det: (MJ * VI - MI * VJ) / I };
+}
+
+/* ---- modes ---- */
+let modes = [];
+function buildPlate() {
+  modes = [];
+  if (P.shape === 'circle') buildDisc(); else buildRitz();
+  retune(); recouple();
+}
+function buildRitz() {
+  const M = Math.min(BMAX, P.order | 0), M1 = M + 1, sq = P.shape === 'square';
+  const bb = sq ? 1 : P.aspect, b2 = bb * bb, b4 = b2 * b2, mu = P.mu;
+  for (let px = 0; px < 2; px++) for (let py = 0; py < 2; py++) {
+    const idx = [];
+    for (let m = 0; m <= M; m++) for (let n = 0; n <= M; n++) if (m % 2 === px && n % 2 === py) idx.push(m * M1 + n);
+    const n = idx.length, A = new Float64Array(n * n);
+    for (let a = 0; a < n; a++) {
+      const m = (idx[a] / M1) | 0, r = idx[a] % M1;
+      for (let c = 0; c < n; c++) {
+        const p = (idx[c] / M1) | 0, q = idx[c] % M1;
+        A[a * n + c] = IA[m][p] * (r === q ? 1 : 0) + (m === p ? 1 : 0) * IA[r][q] / b4
+          + mu * (IC[m][p] * IC[q][r] + IC[p][m] * IC[r][q]) / b2
+          + 2 * (1 - mu) * ID[m][p] * ID[r][q] / b2;
+      }
+    }
+    const { vals, V } = jacobi(A, n);
+    for (let k = 0; k < n; k++) {
+      const lam = vals[k];
+      if (lam < 1e-6) continue;                       // rigid motions (u0u0, u0u1, u1u0)
+      const val = new Float32Array(n); let best = 0, bi = 0;
+      for (let a = 0; a < n; a++) { val[a] = V[a * n + k]; if (Math.abs(val[a]) > best) { best = Math.abs(val[a]); bi = a; } }
+      const m = (idx[bi] / M1) | 0, r = idx[bi] % M1;
+      let label = '(' + m + ',' + r + ')';
+      if (sq && m !== r && px === py) {
+        const pa = idx.indexOf(r * M1 + m);
+        if (pa >= 0) label += (val[pa] * val[bi] >= 0 ? '+' : '−');
+      }
+      modes.push({ kind: 'r', lam, lhat: 4 * Math.sqrt(lam), idx: Int16Array.from(idx), val, M1, label, c: 0, f: 0 });
+    }
+  }
+  modes.sort((a, b) => a.lhat - b.lhat);
+}
+function buildDisc() {
+  const mu = P.mu, nMax = Math.min(CNMAX, Math.max(2, P.order - 1)), sMax = Math.min(CSMAX, Math.max(2, Math.ceil(P.order / 3)));
+  for (let n = 0; n <= nMax; n++) {
+    let found = 0, k0 = 0.4, d0 = freeDisc(n, k0, mu).det;
+    for (let k = k0 + 0.02; k < 20 && found < sMax; k += 0.02) {
+      const d1 = freeDisc(n, k, mu).det;
+      if ((d0 > 0) !== (d1 > 0) && isFinite(d0) && isFinite(d1)) {
+        let a = k - 0.02, b = k, da = d0;
+        for (let it = 0; it < 60; it++) { const mid = (a + b) / 2, dm = freeDisc(n, mid, mu).det; if ((dm > 0) === (da > 0)) { a = mid; da = dm; } else b = mid; }
+        const kk = (a + b) / 2, fr = freeDisc(n, kk, mu), cI = -fr.MJ / fr.MI;
+        const R = new Float32Array(CRES + 1);
+        let mass = 0, rings = 0, prev = 0;
+        for (let t = 0; t <= CRES; t++) {
+          const r = t / CRES; R[t] = Jx(n, kk * r) + cI * Ix(n, kk * r);
+          mass += R[t] * R[t] * r * (t === 0 || t === CRES ? 0.5 : 1) / CRES;
+          if (t > 1 && R[t] !== 0 && (R[t] > 0) !== (prev > 0)) rings++;
+          if (R[t] !== 0) prev = R[t];
+        }
+        const nr = 1 / Math.sqrt(mass * (n === 0 ? 2 * Math.PI : Math.PI));
+        for (let t = 0; t <= CRES; t++) R[t] *= nr;
+        modes.push({ kind: 'd', n, k: kk, lhat: kk * kk, R, phi: null, label: n + ' diam ' + rings + ' ring' + (rings === 1 ? '' : 's'), c: 0, f: 0 });
+        found++;
+      }
+      d0 = d1;
+    }
+  }
+  modes.sort((a, b) => a.lhat - b.lhat);
+}
+function Rlook(R, r) { const f = r * CRES, t = f | 0; if (t >= CRES) return R[CRES]; return R[t] + (R[t + 1] - R[t]) * (f - t); }
+function retune() {
+  if (P.pitch === 'physical') {
+    const mat = MATERIALS[P.material] || MATERIALS.steel, t = P.thick / 1000;
+    const L = P.shape === 'circle' ? P.size / 200 : P.size / 100;        // radius, or side
+    const c = t * Math.sqrt(mat.E / (12 * mat.rho * (1 - P.mu * P.mu)));  // √(D/ρh)
+    for (const m of modes) m.f = m.lhat * c / (2 * Math.PI * L * L);
+  } else {
+    let lmin = Infinity; for (const m of modes) if (m.lhat < lmin) lmin = m.lhat;
+    for (const m of modes) m.f = P.f0 * m.lhat / lmin;
+  }
+}
+function recouple() {
+  if (P.shape === 'circle') {
+    const ddx = P.dx - 0.5, ddy = P.dy - 0.5;
+    const rd = Math.min(1, Math.sqrt(ddx * ddx + ddy * ddy) / 0.5), thd = Math.atan2(ddy, ddx);
+    for (const m of modes) {
+      m.c = Rlook(m.R, rd);
+      if (!m.phi) m.phi = new Float32Array(NN);
+      for (let j = 0; j < N; j++) {
+        const y = (j + 0.5) / N - 0.5;
+        for (let i = 0; i < N; i++) {
+          const x = (i + 0.5) / N - 0.5, r = Math.sqrt(x * x + y * y) / 0.5;
+          m.phi[j * N + i] = r > 1 ? 0 : Rlook(m.R, r) * Math.cos(m.n * (Math.atan2(y, x) - thd));
+        }
+      }
+    }
+  } else {
+    const xd = 2 * P.dx - 1, yd = 2 * P.dy - 1, ux = [], uy = [];
+    for (let p = 0; p <= BMAX; p++) { ux.push(ub(p, xd, 0)); uy.push(ub(p, yd, 0)); }
+    for (const m of modes) {
+      let c = 0;
+      for (let a = 0; a < m.idx.length; a++) { const p = (m.idx[a] / m.M1) | 0, q = m.idx[a] % m.M1; c += m.val[a] * ux[p] * uy[q]; }
+      m.c = c;
+    }
+  }
+}
+function resp(r) { const d = 1 - r * r, e = r / P.Q; return 1 / Math.sqrt(d * d + e * e) / P.Q; }
+
+/* ---- field ---- */
+const E = new Float32Array(NN), Es = new Float32Array(NN), Wt = new Float32Array(NN), W1 = new Float32Array(NN);
+const gEx = new Float32Array(NN), gEy = new Float32Array(NN), gWx = new Float32Array(NN), gWy = new Float32Array(NN);
+const Qc = new Float32Array((BMAX + 1) * (BMAX + 1)), Rrow = [], rowUsed = new Uint8Array(BMAX + 1);
+for (let p = 0; p <= BMAX; p++) Rrow.push(new Float32Array(N));
+let topMode = null, topW = 0, domF = 0;
+
+function fieldFor(f, a, out) {
+  out.fill(0);
+  if (P.shape === 'circle') {
+    for (const m of modes) {
+      const al = a * m.c * resp(f / m.f);
+      if (Math.abs(al) < 1e-4) continue;
+      if (Math.abs(al) > topW) { topW = Math.abs(al); topMode = m; }
+      const ph = m.phi; for (let k = 0; k < NN; k++) out[k] += al * ph[k];
+    }
+    return;
+  }
+  const M1 = Math.min(BMAX, P.order | 0) + 1;
+  Qc.fill(0, 0, M1 * M1); rowUsed.fill(0);
+  for (const m of modes) {
+    const al = a * m.c * resp(f / m.f);
+    if (Math.abs(al) < 1e-4) continue;
+    if (Math.abs(al) > topW) { topW = Math.abs(al); topMode = m; }
+    for (let k = 0; k < m.idx.length; k++) { const id = m.idx[k]; Qc[id] += al * m.val[k]; rowUsed[(id / M1) | 0] = 1; }
+  }
+  for (let p = 0; p < M1; p++) {
+    if (!rowUsed[p]) continue;
+    const R = Rrow[p]; R.fill(0);
+    for (let q = 0; q < M1; q++) { const A = Qc[p * M1 + q]; if (A === 0) continue; const uq = UX[q]; for (let j = 0; j < N; j++) R[j] += A * uq[j]; }
+    const up = UX[p];
+    for (let j = 0; j < N; j++) { const r = R[j], o = j * N; for (let i = 0; i < N; i++) out[o + i] += up[i] * r; }
+  }
+}
+function updateField(peaks) {
+  E.fill(0); W1.fill(0); topMode = null; topW = 0;
+  for (let k = 0; k < peaks.length; k++) {
+    fieldFor(peaks[k].f, peaks[k].a, Wt);
+    for (let i = 0; i < NN; i++) E[i] += Wt[i] * Wt[i];
+    if (k === 0) W1.set(Wt);
+  }
+  domF = peaks.length ? peaks[0].f : 0;
+  if (P.ribs > 0 && P.powder > 0) grad(W1, gWx, gWy);
+}
+function samp(A, u, v) {
+  let x = u * N - 0.5, y = v * N - 0.5;
+  if (x < 0) x = 0; else if (x > N - 1.001) x = N - 1.001;
+  if (y < 0) y = 0; else if (y > N - 1.001) y = N - 1.001;
+  const i = x | 0, j = y | 0, fx = x - i, fy = y - j, k = j * N + i;
+  const a = A[k] + (A[k + 1] - A[k]) * fx, b = A[k + N] + (A[k + N + 1] - A[k + N]) * fx;
+  return a + (b - a) * fy;
+}
+function grad(S, gx, gy) {
+  const h = N / 2;
+  for (let j = 0; j < N; j++) {
+    const jm = j > 0 ? j - 1 : 0, jp = j < N - 1 ? j + 1 : N - 1, sy = (jp - jm) === 2 ? h : N;
+    for (let i = 0; i < N; i++) {
+      const im = i > 0 ? i - 1 : 0, ip = i < N - 1 ? i + 1 : N - 1, sx = (ip - im) === 2 ? h : N, k = j * N + i;
+      gx[k] = (S[j * N + ip] - S[j * N + im]) * sx;
+      gy[k] = (S[jp * N + i] - S[jm * N + i]) * sy;
+    }
+  }
+}
+function smoothField() {
+  const s = P.smooth, s1 = 1 - s;
+  for (let k = 0; k < NN; k++) Es[k] = Es[k] * s + E[k] * s1;
+  grad(Es, gEx, gEy);
+}
+
+/* ---- grains ---- */
+const PMAX = 15000;
+const px = new Float32Array(PMAX), py = new Float32Array(PMAX), VX = new Float32Array(PMAX), VY = new Float32Array(PMAX);
+let nP = 0, nS = 0;
+function inShape(u, v) { if (P.shape !== 'circle') return true; const x = u - 0.5, y = v - 0.5; return x * x + y * y < 0.245; }
+// Sand memory is carried by individual grains, not by the vibration field.
+const sandAge = new Float32Array(PMAX), sandTravel = new Float32Array(PMAX);
+function scatter() {
+  nP = Math.min(PMAX, P.count | 0); nS = Math.round(nP * (1 - P.powder / 100));
+  for (let i = 0; i < nP; i++) {
+    let u, v; do { u = Math.random(); v = Math.random(); } while (!inShape(u, v));
+    px[i] = u; py[i] = v; VX[i] = 0; VY[i] = 0; sandAge[i] = 0; sandTravel[i] = 0;
+  }
+}
+const RIB_R = 0.012, RIB_G = Math.ceil(1 / RIB_R), head = new Int32Array(RIB_G * RIB_G), nextI = new Int32Array(PMAX);
+function ribs() {   // König §253b
+  if (P.ribs <= 0 || nP - nS < 2 || !domF) return;
+  const g2 = P.gain * P.gain, by = P.shape === 'rect' ? P.aspect : 1, R2 = RIB_R * RIB_R, s0 = P.ribs * 1e-7;
+  head.fill(-1);
+  for (let i = nS; i < nP; i++) {
+    const cx = Math.min(RIB_G - 1, Math.max(0, (px[i] * RIB_G) | 0)), cy = Math.min(RIB_G - 1, Math.max(0, (py[i] * RIB_G) | 0));
+    const c = cy * RIB_G + cx; nextI[i] = head[c]; head[c] = i;
+  }
+  for (let i = nS; i < nP; i++) {
+    const u = px[i], v = py[i];
+    let wx = samp(gWx, u, v), wy = samp(gWy, u, v) / by;
+    const w2 = wx * wx + wy * wy, m = Math.min(1, g2 * w2 / 600);
+    if (m < 0.01) continue;
+    const inv = 1 / Math.sqrt(w2); wx *= inv; wy *= inv;
+    const cx = (u * RIB_G) | 0, cy = (v * RIB_G) | 0;
+    for (let oy = -1; oy <= 1; oy++) {
+      const yy = cy + oy; if (yy < 0 || yy >= RIB_G) continue;
+      for (let ox = -1; ox <= 1; ox++) {
+        const xx = cx + ox; if (xx < 0 || xx >= RIB_G) continue;
+        for (let j = head[yy * RIB_G + xx]; j !== -1; j = nextI[j]) {
+          if (j <= i) continue;
+          const dx = px[j] - u, dy = (py[j] - v) * by, r2 = dx * dx + dy * dy;
+          if (r2 > R2 || r2 < 1e-12) continue;
+          const r = Math.sqrt(r2), rx = dx / r, ry = dy / r, c = rx * wx + ry * wy;
+          const q = R2 / (r2 + 2e-5), f = s0 * m * Math.min(25, q * q);
+          const k1 = 2 * c, k2 = 1 - 5 * c * c;     // F = −K/r⁴·[2c ĉ + (1−5c²) r̂]
+          const Fx = -f * (k1 * wx + k2 * rx), Fy = -f * (k1 * wy + k2 * ry) / by;
+          VX[j] += Fx; VY[j] += Fy; VX[i] -= Fx; VY[i] -= Fy;
+        }
+      }
+    }
+  }
+}
+function step(dt = 1 / 60) {
+  const g2 = P.gain * P.gain, L = P.launch, kb = P.bounce * 1e-3, kd = P.drift * 1e-6, damp = 1 - P.settle;
+  const ay = P.shape === 'rect' ? 1 / P.aspect : 1, ay2 = ay * ay, circ = P.shape === 'circle', VMAX = 0.02;
+  for (let i = 0; i < nP; i++) {
+    let u = px[i], v = py[i], vx = VX[i], vy = VY[i];
+    const F = g2 * samp(Es, u, v), a = F > 0 ? Math.sqrt(F) : 0;
+    if (i < nS) {   // sand (Savart §262)
+      const ex = a - L;
+      if (ex > 0) { const k = kb * ex; vx += (Math.random() - 0.5) * 2 * k; vy += (Math.random() - 0.5) * 2 * k * ay; }
+      vx -= kd * g2 * samp(gEx, u, v); vy -= kd * g2 * samp(gEy, u, v) * ay2;
+    } else {        // light powder, carried toward the loops
+      const ex = a - L * 0.4;
+      if (ex > 0) { const k = kb * 0.22 * ex; vx += (Math.random() - 0.5) * 2 * k; vy += (Math.random() - 0.5) * 2 * k * ay; }
+      vx += kd * 1.4 * g2 * samp(gEx, u, v); vy += kd * 1.4 * g2 * samp(gEy, u, v) * ay2;
+    }
+    vx *= damp; vy *= damp;
+    if (vx > VMAX) vx = VMAX; else if (vx < -VMAX) vx = -VMAX;
+    if (vy > VMAX) vy = VMAX; else if (vy < -VMAX) vy = -VMAX;
+    u += vx; v += vy;
+    if (circ) {
+      const dx = u - 0.5, dy = v - 0.5, d2 = dx * dx + dy * dy;
+      if (d2 > 0.2475) {
+        const d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
+        u = 0.5 + nx * 0.4974; v = 0.5 + ny * 0.4974;
+        const vn = vx * nx + vy * ny; if (vn > 0) { vx -= 1.5 * vn * nx; vy -= 1.5 * vn * ny; }
+      }
+    } else {
+      if (u < 0) { u = -u; vx = -vx * 0.5; } else if (u > 1) { u = 2 - u; vx = -vx * 0.5; }
+      if (v < 0) { v = -v; vy = -vy * 0.5; } else if (v > 1) { v = 2 - v; vy = -vy * 0.5; }
+      if (u < 0) u = 0; if (u > 0.9999) u = 0.9999; if (v < 0) v = 0; if (v > 0.9999) v = 0.9999;
+    }
+    if (P.sandMemory && (i < nS || P.powderAge)) {
+      sandAge[i] += dt;
+      sandTravel[i] += Math.hypot(u - px[i], v - py[i]);
+      // a grain that travels far enough is newly exposed; settled grains cool toward black
+      if (sandTravel[i] > P.ageTravel) { sandAge[i] = 0; sandTravel[i] = 0; }
+    }
+    px[i] = u; py[i] = v; VX[i] = vx; VY[i] = vy;
+  }
+}
+
+/* ---- listening ---- */
+let ctxA = null, an = null, spec = null, sr = 48000, inG = null, osc = null, oscG = null, oscOut = null;
+let peaks = [], hold = false;
+function attach(a) {
+  if (!a || ctxA === a) return;
+  ctxA = a;
+  an = a.createAnalyser();
+  an.fftSize = 8192; an.smoothingTimeConstant = 0.25; an.minDecibels = -130; an.maxDecibels = 0;
+  spec = new Float32Array(an.frequencyBinCount); spec.fill(-200);
+  sr = a.sampleRate;
+  inG = a.createGain(); inG.connect(an);
+  osc = a.createOscillator(); osc.type = 'sine'; osc.frequency.value = P.toneHz;
+  oscG = a.createGain(); oscG.gain.value = 0;
+  oscOut = a.createGain(); oscOut.gain.value = 0;
+  osc.connect(oscG); oscG.connect(an); oscG.connect(oscOut); oscOut.connect(a.destination);
+  osc.start();
+  applyTone();
+}
+function tap(node) { if (inG && node) { try { node.connect(inG); } catch (e) {} } }
+function applyTone() {
+  if (!ctxA) return;
+  const t = ctxA.currentTime;
+  oscG.gain.setTargetAtTime(P.tone ? 0.5 : 0, t, 0.02);
+  oscOut.gain.setTargetAtTime(P.tone && P.toneOut ? 0.4 : 0, t, 0.02);
+  osc.frequency.setTargetAtTime(P.toneHz, t, 0.02);
+}
+function readPeaks() {
+  an.getFloatFrequencyData(spec);
+  const bin = sr / an.fftSize, len = spec.length;
+  const i0 = Math.max(3, Math.floor(P.fmin / bin)), i1 = Math.min(len - 3, Math.ceil(P.fmax / bin));
+  const cand = [];
+  for (let i = i0; i <= i1; i++) {
+    const v = spec[i];
+    if (v < P.gate) continue;
+    if (v >= spec[i - 1] && v > spec[i + 1] && v >= spec[i - 2] && v >= spec[i + 2]) cand.push(i);
+  }
+  cand.sort((a, b) => spec[b] - spec[a]);
+  const out = [];
+  for (const i of cand) {
+    if (out.length >= P.peaks) break;
+    if (out.some(o => Math.abs(o.i - i) < 4)) continue;
+    const a = spec[i - 1], b = spec[i], c = spec[i + 1], den = a - 2 * b + c;
+    const d = den !== 0 ? Math.max(-0.5, Math.min(0.5, 0.5 * (a - c) / den)) : 0;
+    out.push({ i, f: (i + d) * bin, db: b, a: Math.max(0, Math.min(1, (b - P.gate) / P.range)) });
+  }
+  return out;
+}
+
+/* ---- drawing ---- */
+let cv = null, ctx = null, W = 1, H = 1, dpr = 1, topPad = 0;
+let plate = { x: 0, y: 0, w: 1, h: 1 }, band = { y: 0, h: 0 }, PW = 1, PH = 1, infoY = 8;
+const oc = document.createElement('canvas'), octx = oc.getContext('2d');
+const fc = document.createElement('canvas'); fc.width = N; fc.height = N;
+const fctx = fc.getContext('2d'), fimg = fctx.createImageData(N, N);
+let img = null, buf = null;
+function setCanvas(c) { cv = c; ctx = c.getContext('2d'); }
+function layout(w, h, d, tp) {
+  W = Math.max(1, w); H = Math.max(1, h); dpr = d; topPad = tp || 0;
+  if (!cv) return;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  // info line, plate and mode strip sit together as one centred group; the strip takes spare height
+  const asp = P.shape === 'rect' ? P.aspect : 1, minBand = P.strip ? 24 : 0, gap = P.strip ? 6 : 0;
+  const availW = W - 16, availH = Math.max(30, H - topPad - 16 - gap - minBand - 4);
+  const pw = Math.max(10, Math.min(availW, availH / asp)), ph = pw * asp;
+  const spare = Math.max(0, availH - ph);
+  band.h = P.strip ? Math.round(Math.min(56, minBand + spare)) : 0;
+  const groupH = 16 + ph + gap + band.h, gy = topPad + Math.max(0, (H - topPad - groupH) / 2);
+  infoY = gy + 8;
+  plate = { x: Math.round((W - pw) / 2), y: Math.round(gy + 16), w: Math.round(pw), h: Math.round(ph) };
+  band.y = plate.y + plate.h + gap;
+  PW = Math.max(2, Math.round(plate.w * dpr)); PH = Math.max(2, Math.round(plate.h * dpr));
+  oc.width = PW; oc.height = PH; img = octx.createImageData(PW, PH); buf = new Uint32Array(img.data.buffer);
+}
+function relayout() { layout(W, H, dpr, topPad); }
+function platePath() {
+  ctx.beginPath();
+  if (P.shape === 'circle') ctx.arc(plate.x + plate.w / 2, plate.y + plate.h / 2, plate.w / 2, 0, Math.PI * 2);
+  else ctx.rect(plate.x, plate.y, plate.w, plate.h);
+}
+const SAND = 0xFFb3d0dd, POWD = 0xFF4ea2c6;
+function drawGrains() {
+  buf.fill(0);
+  const g = P.grain | 0, wMax = PW - g, hMax = PH - g;
+  for (let i = 0; i < nP; i++) {
+    let x = (px[i] * PW) | 0, y = (py[i] * PH) | 0;
+    if (x > wMax) x = wMax; if (y > hMax) y = hMax;
+    let col = i < nS ? SAND : POWD;
+    if (P.sandMemory && (i < nS || P.powderAge)) {
+      // fresh grains are pale and cool; settled grains darken toward charcoal
+      const t = Math.min(1, sandAge[i] / P.ageTime), e = t * t * (3 - 2 * t);
+      const r0 = i < nS ? 221 : 198, g0 = i < nS ? 208 : 162, b0 = i < nS ? 179 : 78;   // same bone as un-aged sand
+      const r = Math.round(r0 * (1 - e) + 20 * e), gg = Math.round(g0 * (1 - e) + 25 * e), b = Math.round(b0 * (1 - e) + 34 * e);
+      col = (0xFF000000 | (b << 16) | (gg << 8) | r) >>> 0;
+    }
+    for (let yy = 0; yy < g; yy++) { const o = (y + yy) * PW + x; for (let xx = 0; xx < g; xx++) buf[o + xx] = col; }
+  }
+  octx.putImageData(img, 0, 0);
+  ctx.drawImage(oc, plate.x, plate.y, plate.w, plate.h);
+}
+function drawField() {
+  const g2 = P.gain * P.gain, d = fimg.data;
+  for (let k = 0; k < NN; k++) {
+    const a = Math.sqrt(Math.max(0, g2 * Es[k])), t = Math.min(1, a / 2) * P.field;
+    d[k * 4] = 212; d[k * 4 + 1] = 165; d[k * 4 + 2] = 116; d[k * 4 + 3] = t * 220;
+  }
+  fctx.putImageData(fimg, 0, 0);
+  ctx.save(); platePath(); ctx.clip();
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(fc, plate.x, plate.y, plate.w, plate.h);
+  ctx.restore();
+}
+function fx(f) { return 10 + Math.log(f / P.fmin) / Math.log(P.fmax / P.fmin) * (W - 20); }
+function drawStrip() {
+  const y0 = band.y, h = band.h;
+  ctx.fillStyle = '#141219'; ctx.fillRect(8, y0, W - 16, h);
+  if (spec && an) {
+    const bin = sr / an.fftSize, lf = Math.log(P.fmax / P.fmin);
+    ctx.fillStyle = 'rgba(201,195,209,0.32)';
+    for (let x = 10; x < W - 10; x += 2) {
+      const fa = P.fmin * Math.exp((x - 10) / (W - 20) * lf), fb = P.fmin * Math.exp((x + 2 - 10) / (W - 20) * lf);
+      const ia = Math.max(1, Math.floor(fa / bin)), ib = Math.min(spec.length - 1, Math.max(ia, Math.floor(fb / bin)));
+      let mx = -300; for (let i = ia; i <= ib; i++) if (spec[i] > mx) mx = spec[i];
+      const t = Math.max(0, Math.min(1, (mx - P.gate) / P.range));
+      if (t > 0) ctx.fillRect(x, y0 + h - t * (h - 2), 1.5, t * (h - 2));
+    }
+  }
+  ctx.fillStyle = '#d4a574';
+  let cmax = 1e-9; for (const m of modes) cmax = Math.max(cmax, Math.abs(m.c));
+  for (const m of modes) {
+    const c = Math.abs(m.c) / cmax; if (c < 0.05 || m.f < P.fmin || m.f > P.fmax) continue;
+    const th = 3 + 7 * c; ctx.fillRect(fx(m.f) - 0.5, y0 + h - th, 1, th);
+  }
+  ctx.fillStyle = '#c9c3d1';
+  for (const p of peaks) if (p.f >= P.fmin && p.f <= P.fmax) ctx.fillRect(fx(p.f) - 0.5, y0, 1, h);
+}
+// VIBRATION MEMORY: grid-bound, blooms when the local field changes, then habituates even under steady input.
+// It runs on its own grid sized to the screen (Memory cell size = screen pixels per cell), separate from the
+// N×N physics grid; the smoothed energy is read in bilinearly, so contours stay smooth instead of stair-stepping.
+const MEM_MIN = 64, MEM_MAX = 512;
+let M = N, MM = N * N;
+const mc = document.createElement('canvas'); mc.width = M; mc.height = M;
+const mctx = mc.getContext('2d');
+let mimg = mctx.createImageData(M, M);
+let memory = new Float32Array(MM), adapted = new Float32Array(MM);
+let MI0 = new Int32Array(M), MI1 = new Int32Array(M), MF = new Float32Array(M);
+function memTables() {    // memory cell centre → physics grid (cell centres at (i+0.5)/N)
+  MI0 = new Int32Array(M); MI1 = new Int32Array(M); MF = new Float32Array(M);
+  for (let I = 0; I < M; I++) {
+    const g = Math.max(0, Math.min(N - 1, (I + 0.5) / M * N - 0.5)), i0 = Math.min(N - 2, Math.floor(g));
+    MI0[I] = i0; MI1[I] = i0 + 1; MF[I] = g - i0;
+  }
+}
+function resampleGrid(src, m0, m1) {   // bilinear resize so memory survives a grid change
+  const out = new Float32Array(m1 * m1);
+  for (let J = 0; J < m1; J++) {
+    const gy = Math.max(0, Math.min(m0 - 1, (J + 0.5) / m1 * m0 - 0.5)), j0 = Math.min(m0 - 2, Math.floor(gy)), fy = gy - j0;
+    for (let I = 0; I < m1; I++) {
+      const gx = Math.max(0, Math.min(m0 - 1, (I + 0.5) / m1 * m0 - 0.5)), i0 = Math.min(m0 - 2, Math.floor(gx)), fx = gx - i0;
+      const a = src[j0 * m0 + i0], b = src[j0 * m0 + i0 + 1], c = src[(j0 + 1) * m0 + i0], d = src[(j0 + 1) * m0 + i0 + 1];
+      out[J * m1 + I] = (a + (b - a) * fx) * (1 - fy) + (c + (d - c) * fx) * fy;
+    }
+  }
+  return out;
+}
+function fitMemoryGrid() {
+  const want = Math.max(MEM_MIN, Math.min(MEM_MAX, Math.round(plate.w * dpr / Math.max(1, P.memCell))));
+  if (want === M) return;
+  memory = resampleGrid(memory, M, want); adapted = resampleGrid(adapted, M, want);
+  M = want; MM = M * M; mc.width = M; mc.height = M; mimg = mctx.createImageData(M, M);
+  memTables();
+}
+memTables();
+const MEM_RGB = new Uint8Array(256 * 3);
+(function buildMemoryPalette() {   // black -> spectral colour -> white
+  const stops = [
+    [0.00, 0, 0, 0], [0.12, 49, 16, 92], [0.25, 36, 65, 190],
+    [0.38, 20, 177, 220], [0.51, 38, 190, 112], [0.64, 228, 214, 48],
+    [0.77, 231, 89, 42], [0.89, 245, 130, 195], [1.00, 255, 255, 255]
+  ];
+  for (let n = 0; n < 256; n++) {
+    const t = n / 255; let a = stops[0], b = stops[stops.length - 1];
+    for (let i = 1; i < stops.length; i++) if (t <= stops[i][0]) { a = stops[i - 1]; b = stops[i]; break; }
+    const f = (t - a[0]) / (b[0] - a[0]), k = n * 3;
+    MEM_RGB[k] = a[1] + (b[1] - a[1]) * f; MEM_RGB[k + 1] = a[2] + (b[2] - a[2]) * f; MEM_RGB[k + 2] = a[3] + (b[3] - a[3]) * f;
+  }
+})();
+function updateMemory(dt) {
+  dt = Math.max(0, Math.min(0.05, dt));
+  fitMemoryGrid();
+  const g2 = P.gain * P.gain, sc = 1 / Math.max(0.01, P.memScale);
+  const kRise = 1 - Math.exp(-P.memRise * dt), kFall = 1 - Math.exp(-P.memFall * dt);
+  const nov = P.memNovelty, ons = P.memOnset, chg = P.memCharge * dt, drn = P.memDrain * dt;
+  for (let J = 0; J < M; J++) {
+    const r0 = MI0[J] * N, r1 = MI1[J] * N, fy = MF[J], row = J * M;
+    for (let I = 0; I < M; I++) {
+      const i0 = MI0[I], i1 = MI1[I], fx = MF[I];
+      const a = Es[r0 + i0], b = Es[r0 + i1], c = Es[r1 + i0], d = Es[r1 + i1];
+      const e = (a + (b - a) * fx) * (1 - fy) + (c + (d - c) * fx) * fy;
+      const k = row + I;
+      const activity = Math.min(1, Math.sqrt(Math.max(0, g2 * e)) * sc);
+      const oldAdapt = adapted[k], dA = activity - oldAdapt;
+      adapted[k] = oldAdapt + dA * (dA > 0 ? kRise : kFall);
+      // changes in local vibration awaken colour; steady stimulation habituates and the memory drains away
+      const novelty = Math.min(1, Math.abs(dA) * nov + (dA > 0 ? dA * ons : 0));
+      const mv = memory[k] + novelty * chg - memory[k] * drn;
+      memory[k] = mv < 0 ? 0 : mv > 1 ? 1 : mv;
+    }
+  }
+}
+let paletteFn = null;                 // host colour map (Spectro's), t∈[0,1] → [r,g,b]
+const SPEC_RGB = new Uint8Array(256 * 3);
+function drawMemory() {
+  const d = mimg.data, ceil = P.memCeil;
+  let pal = MEM_RGB;
+  if (P.memPalette === 'spectro' && paletteFn) {
+    for (let n = 0; n < 256; n++) { const c = paletteFn(n / 255); SPEC_RGB[n * 3] = c[0]; SPEC_RGB[n * 3 + 1] = c[1]; SPEC_RGB[n * 3 + 2] = c[2]; }
+    pal = SPEC_RGB;
+  }
+  const ma = P.memAlpha, mo = P.memOpacity;
+  for (let k = 0; k < MM; k++) {
+    const t = memory[k], c = Math.round(t * ceil * 255) * 3, i = k * 4;
+    d[i] = pal[c]; d[i + 1] = pal[c + 1]; d[i + 2] = pal[c + 2];
+    d[i + 3] = Math.round(Math.min(mo, t * ma) * 255);
+  }
+  mctx.putImageData(mimg, 0, 0);
+  ctx.save(); platePath(); ctx.clip();
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(mc, plate.x, plate.y, plate.w, plate.h);
+  ctx.restore();
+}
+function wipeMemory() { memory.fill(0); adapted.fill(0); for (let i = 0; i < nP; i++) { sandAge[i] = 0; sandTravel[i] = 0; } }
+const NOTES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+function noteName(f) {
+  const m = 69 + 12 * Math.log2(f / 440), r = Math.round(m), c = Math.round((m - r) * 100);
+  return NOTES[((r % 12) + 12) % 12] + (Math.floor(r / 12) - 1) + ' ' + (c >= 0 ? '+' : '') + c + '¢';
+}
+let hostInfo = null, flash = '', flashT = 0;
+function infoLine() {
+  if (flash && performance.now() - flashT < 3500) return flash;
+  let s = hostInfo ? hostInfo() + '  ' : '';
+  if (peaks.length) {
+    s += noteName(peaks[0].f) + '  ' + peaks[0].f.toFixed(1) + ' Hz';
+    if (topMode) s += ' · mode ' + topMode.label + ' ' + topMode.f.toFixed(0) + ' Hz';
+  } else s += P.material + ' ' + P.size + ' cm';
+  if (hold) s += ' · held';
+  return s;
+}
+function render() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = '#0d0c11'; ctx.fillRect(0, 0, W, H);
+  ctx.font = '10px ui-monospace,Menlo,monospace'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  ctx.fillStyle = '#7d7689'; ctx.fillText(infoLine(), Math.max(8, plate.x), infoY);
+  platePath(); ctx.fillStyle = '#24212b'; ctx.fill();
+  if (P.memory) drawMemory();
+  if (P.field > 0) drawField();
+  drawGrains();
+  platePath(); ctx.strokeStyle = '#3d3846'; ctx.lineWidth = 1; ctx.stroke();
+  const mx = plate.x + P.dx * plate.w, my = plate.y + P.dy * plate.h;
+  if (drag && drag.moved) {
+    const r = cv.getBoundingClientRect(), fx0 = drag.x - r.left, fy0 = drag.y - r.top;
+    ctx.strokeStyle = 'rgba(212,165,116,0.35)'; ctx.beginPath(); ctx.moveTo(fx0, fy0); ctx.lineTo(mx, my); ctx.stroke();
+    ctx.beginPath(); ctx.arc(mx, my, 9, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(212,165,116,0.9)'; ctx.stroke();
+  }
+  ctx.beginPath(); ctx.arc(mx, my, 3.5, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(212,165,116,0.8)'; ctx.stroke();
+  if (P.strip) drawStrip();
+}
+let lastT = 0;
+const DRAG_OFF = 56;                  // css px the marker floats above the finger while dragging
+let drag = null;
+function toPlate(cx, cy) {
+  const r = cv.getBoundingClientRect();
+  let u = (cx - r.left - plate.x) / plate.w, v = (cy - r.top - plate.y) / plate.h;
+  if (P.shape === 'circle') {
+    const dx = u - 0.5, dy = v - 0.5, d = Math.hypot(dx, dy);
+    if (d > 0.48) { u = 0.5 + dx / d * 0.48; v = 0.5 + dy / d * 0.48; }
+  } else { u = Math.max(0.01, Math.min(0.99, u)); v = Math.max(0.01, Math.min(0.99, v)); }
+  return [u, v];
+}
+function setDrive(u, v) { P.dx = u; P.dy = v; req('couple'); }
+function pointer(type, e) {
+  if (type === 'down') {
+    const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    if (x < plate.x - 12 || x > plate.x + plate.w + 12 || y < plate.y - 12 || y > plate.y + plate.h + 12) return false;
+    drag = { sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY, moved: false };
+    return true;
+  }
+  if (!drag) return false;
+  drag.x = e.clientX; drag.y = e.clientY;
+  if (Math.hypot(drag.x - drag.sx, drag.y - drag.sy) > 6) drag.moved = true;
+  if (type === 'move') { if (drag.moved) setDrive(...toPlate(drag.x, drag.y - DRAG_OFF)); }
+  else {   // up / cancel: a plain tap sets the exact point, a drag keeps the floated point
+    if (type === 'up') setDrive(...(drag.moved ? toPlate(drag.x, drag.y - DRAG_OFF) : toPlate(drag.x, drag.y)));
+    drag = null;
+  }
+  return true;
+}
+function resetDrive() { setDrive(0.5, 0.5); }
+function tick(running, visible) {
+  const now = performance.now(), dt = lastT ? Math.min(0.1, (now - lastT) / 1000) : 1 / 60;
+  lastT = now;
+  if (!hold) {
+    if (running && an) { peaks = readPeaks(); updateField(peaks); }
+    else if (peaks.length || domF) { peaks = []; updateField(peaks); }
+  }
+  if (!visible || !cv) return;
+  smoothField();
+  if (P.memory) updateMemory(dt);
+  ribs(); step(dt); render();
+}
+
+/* ---- parameter changes ---- */
+let pending = '';
+function req(kind) {
+  if (pending) { if (kind === 'build') pending = 'build'; return; }
+  pending = kind;
+  requestAnimationFrame(() => { const k = pending; pending = ''; if (k === 'couple') recouple(); else buildPlate(); });
+}
+function set(k, v) {
+  P[k] = v;
+  switch (k) {
+    case 'shape': buildPlate(); scatter(); relayout(); break;
+    case 'pitch': case 'size': case 'thick': case 'f0': retune(); break;
+    case 'material': P.mu = MATERIALS[v].mu; req('build'); break;
+    case 'mu': case 'order': req('build'); break;
+    case 'aspect': if (P.shape === 'rect') { req('build'); relayout(); } break;
+    case 'dx': case 'dy': req('couple'); break;
+    case 'count': case 'powder': scatter(); break;
+    case 'strip': relayout(); break;
+    case 'tone': case 'toneOut': case 'toneHz': applyTone(); break;
+  }
+}
+function init() { buildPlate(); scatter(); }
+return {
+  P, MATERIALS, set, init, attach, tap, tick, layout, setCanvas, scatter,
+  toggleHold() { hold = !hold; return hold; },
+  wipe: wipeMemory, pointer, resetDrive,
+  setHostInfo(fn) { hostInfo = fn; }, setPalette(fn) { paletteFn = fn; },
+  flash(s) { flash = s; flashT = performance.now(); },
+  axisModes() {   // drivable modes for the spectrogram axis
+    let cm = 1e-9; for (const m of modes) cm = Math.max(cm, Math.abs(m.c));
+    return modes.filter(m => Math.abs(m.c) / cm >= 0.05).map(m => ({ f: m.f, c: Math.abs(m.c) / cm, label: m.label }));
+  },
+  plateImage() {  // the plate (memory + sand) as its own canvas
+    const c = document.createElement('canvas'); c.width = Math.round(plate.w * dpr); c.height = Math.round(plate.h * dpr);
+    c.getContext('2d').drawImage(cv, Math.round(plate.x * dpr), Math.round(plate.y * dpr), c.width, c.height, 0, 0, c.width, c.height);
+    return c;
+  },
+  get plateRect() { return plate; }
+};
+})();
+
+/* ───────── plate view, snapshot ───────── */
+function plateLoop(){
+  PLATE.tick(!!actx&&actx.state==='running', VIEW==='plate');
+  requestAnimationFrame(plateLoop);
+}
+for(const b of document.querySelectorAll('#vsw button')) b.addEventListener('click',()=>{
+  if(VIEW===b.dataset.v) return;
+  VIEW=b.dataset.v;
+  for(const x of document.querySelectorAll('#vsw button')) x.classList.toggle('on',x===b);
+  syncTabs(); layout();
+});
+$('bHold').addEventListener('click',()=>{ $('bHold').classList.toggle('on',PLATE.toggleHold()); });
+$('bScat').addEventListener('click',()=>{ PLATE.scatter(); PLATE.resetDrive(); });
+$('bWipe').addEventListener('click',()=>PLATE.wipe());
+$('bSend').addEventListener('click',async()=>{   // close the loop: plate picture → encoder → sound → plate
+  const img=PLATE.plateImage();
+  setSource(img,'plate snapshot');
+  PLATE.flash('plate sent to Image · encoding…');
+  try{ await encode(); PLATE.flash('plate encoded · press Play to hear it'); }
+  catch(e){ PLATE.flash('could not encode the plate image'); }
+});
+{
+  const pc=$('pcv');
+  pc.addEventListener('pointerdown',e=>{ if(PLATE.pointer('down',e)){ pc.setPointerCapture(e.pointerId); e.preventDefault(); } });
+  pc.addEventListener('pointermove',e=>{ PLATE.pointer('move',e); });
+  pc.addEventListener('pointerup',e=>{ PLATE.pointer('up',e); });
+  pc.addEventListener('pointercancel',e=>{ PLATE.pointer('cancel',e); });
+}
+PLATE.setHostInfo(()=>{
+  if(busyMsg) return busyMsg;
+  if(lastWarn&&performance.now()-lastWarnT<4000) return lastWarn;
+  if(live) return 'mic';
+  if(!cur) return 'idle';
+  const nm=(cur.encoded?'encoded':(cur.name||'file').replace(/\.[^.]+$/,'').slice(0,16));
+  return nm+' '+(playing?'▶ ':'❚❚ ')+pos.toFixed(1)+'/'+cur.dur.toFixed(1)+'s';
+});
+PLATE.setPalette(t=>{ let x=Math.pow(t,+P.vgamma); if(P.cinv) x=1-x; return cmapRGB(P.cmap,x); });
+function snapView(){
+  const r=$('view').getBoundingClientRect(), c=document.createElement('canvas');
+  c.width=Math.round(r.width*dpr); c.height=Math.round(r.height*dpr);
+  const x=c.getContext('2d'); x.fillStyle='#0d0c11'; x.fillRect(0,0,c.width,c.height);
+  const was=curs.on; curs.on=false; draw();
+  x.drawImage(VIEW==='plate'?$('pcv'):cv,0,0);
+  curs.on=was;
+  $('snapImg').src=c.toDataURL('image/png'); $('snapOv').style.display='flex';
+}
+$('bSnap').addEventListener('click',snapView);
+function setFull(on){ document.body.classList.toggle('fs',on); }   // #view's ResizeObserver re-lays the plate out
+$('bFull').addEventListener('click',()=>{ if(VIEW==='plate') setFull(true); });
+$('fsExit').addEventListener('click',()=>setFull(false));
+$('fsSnap').addEventListener('click',snapView);
+$('snapOv').addEventListener('click',e=>{ if(e.target.id!=='snapImg') $('snapOv').style.display='none'; });
+document.addEventListener('selectstart',e=>{ if(!(e.target&&e.target.id==='snapImg')) e.preventDefault(); });
+document.addEventListener('contextmenu',e=>{ if(!(e.target&&e.target.id==='snapImg')) e.preventDefault(); });
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&actx&&actx.state!=='running'&&(live||playing)) actx.resume(); });
+
+/* ───────── saved state: every control, view, tabs, drive point, panel fold ─────────
+   Kept in localStorage and written whenever something changes. Loaded files, images and the
+   plate's memory picture are not saved. Stored values are checked against each control's
+   current range/options, so an older save can't push a slider out of bounds. */
+const STATE_KEY='spectroArtPlate.v1';
+let stateOK=true, stateBlock=false, lastSaved='';
+function stateSnapshot(){
+  const p={}; for(const c of C) p[c.k]=P[c.k];
+  return JSON.stringify({p,view:VIEW,tabs:lastTab,dx:PLATE.P.dx,dy:PLATE.P.dy,fold:$('deck').classList.contains('collapsed')});
+}
+function saveState(){
+  if(stateBlock||!stateOK) return;
+  const j=stateSnapshot(); if(j===lastSaved) return;
+  try{ localStorage.setItem(STATE_KEY,j); lastSaved=j; }catch(e){ stateOK=false; }
+}
+function validVal(c,v){
+  const ty=c.ty||'range';
+  if(ty==='check') return typeof v==='boolean';
+  if(ty==='select') return c.opts.some(o=>o[0]===v);
+  return typeof v==='number'&&isFinite(v)&&v>=+c.min&&v<=+c.max;
+}
+function loadState(){   // returns 'restored', 'none' or 'unavailable'
+  let raw=null;
+  try{ raw=localStorage.getItem(STATE_KEY); }catch(e){ stateOK=false; return 'unavailable'; }
+  if(!raw) return 'none';
+  let st; try{ st=JSON.parse(raw); }catch(e){ return 'none'; }
+  if(!st||typeof st!=='object') return 'none';
+  if(st.p) for(const c of C) if(c.k in st.p&&validVal(c,st.p[c.k])) setParam(c.k,st.p[c.k]);
+  if(st.view==='plate'||st.view==='spectro'){
+    VIEW=st.view;
+    for(const x of document.querySelectorAll('#vsw button')) x.classList.toggle('on',x.dataset.v===VIEW);
+  }
+  if(st.tabs){
+    if(PLATE_TABS.includes(st.tabs.plate)) lastTab.plate=st.tabs.plate;
+    if(TABS.some(t=>t[0]===st.tabs.spectro)&&!PLATE_TABS.includes(st.tabs.spectro)) lastTab.spectro=st.tabs.spectro;
+  }
+  for(const k of ['dx','dy']) if(typeof st[k]==='number'&&isFinite(st[k])) PLATE.P[k]=Math.max(0.01,Math.min(0.99,st[k]));
+  if(st.fold){ $('deck').classList.add('collapsed'); fold(); }
+  return 'restored';
+}
+function resetState(){
+  stateBlock=true;
+  try{ localStorage.removeItem(STATE_KEY); }catch(e){}
+  location.reload();
 }
 
 /* ───────── boot ───────── */
 buildUI();
+const stateLoad=loadState();
+for(const c of C) if(c.cat==='plate') PLATE.P[c.k.slice(3)]=P[c.k];
+PLATE.setCanvas($('pcv'));
+PLATE.init();
+syncTabs();
 new ResizeObserver(layout).observe($('view'));
 document.addEventListener('gesturestart',e=>e.preventDefault());
 layout();
 setSource(testCard(),'test card');
 encode();
+requestAnimationFrame(plateLoop);
+if(stateLoad==='restored') PLATE.flash('settings restored');
+else if(stateLoad==='unavailable') PLATE.flash('settings can’t be saved in this app');
+setInterval(saveState,1500);                       // cheap: only writes when something changed
+window.addEventListener('pagehide',saveState);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) saveState(); });
 })();
 </script>
 </body>
