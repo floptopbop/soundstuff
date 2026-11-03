@@ -616,11 +616,11 @@ function draw(){
 
 /* ───────── HUD ───────── */
 function setHudWarn(s){ $('hud').innerHTML=''; const w=document.createElement('span'); w.className='w'; w.textContent=s; $('hud').appendChild(w); }
-let hudNote='', hudNoteAt=-1e9;
-function flash(msg){ hudNote=msg; hudNoteAt=performance.now(); refreshHUD(); }
+let hudNote='', hudNoteAt=-1e9, hudNoteMs=4000;
+function flash(msg,ms){ hudNote=msg; hudNoteAt=performance.now(); hudNoteMs=ms||4000; refreshHUD(); }
 function refreshHUD(){
   refreshHUD0();
-  if(hudNote&&performance.now()-hudNoteAt<4000){
+  if(hudNote&&performance.now()-hudNoteAt<hudNoteMs){
     const w=document.createElement('span'); w.className='w'; w.textContent=' · '+hudNote; $('hud').appendChild(w);
   }
 }
@@ -668,7 +668,22 @@ function updateTime(){ $('tm').textContent=(cur?pos.toFixed(1)+' / '+cur.dur.toF
 /* ───────── playback ───────── */
 function ensureCtx(){
   if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
-  if(actx.state==='suspended') actx.resume();
+  if(actx.state!=='running'){ try{ const r=actx.resume(); if(r&&r.catch) r.catch(()=>{}); }catch(e){} }
+}
+// iOS keeps Web Audio locked until a real tap: unlock on the first touches, and
+// play a silent 1-sample buffer (the classic unlock). Also recovers 'interrupted'.
+function unlockAudio(){
+  try{
+    ensureCtx();
+    const b=actx.createBuffer(1,1,22050), s=actx.createBufferSource();
+    s.buffer=b; s.connect(actx.destination); s.start(0);
+  }catch(e){}
+}
+for(const ev of ['pointerdown','touchend','click']) document.addEventListener(ev,()=>{ if(!actx||actx.state!=='running') unlockAudio(); },{passive:true});
+async function audioReady(){
+  ensureCtx();
+  if(actx.state!=='running'){ try{ await Promise.race([actx.resume(),new Promise(r=>setTimeout(r,800))]); }catch(e){} }
+  return actx.state==='running';
 }
 function getBuf(){
   if(cur.buf) return cur.buf;
@@ -800,7 +815,7 @@ function savePng(){
 
 /* ───────── live mic ───────── */
 let live=false, micBusy=false, liveSR=44100, micStream=null, micSrc=null, micNode=null, micSink=null, workletReady=false;
-let liveKind='mic', lisSrc=null, lisT0=0, lisFed=0, lisData=null, lisSrcCur=null;
+let lisWall=0, liveKind='mic', lisSrc=null, lisT0=0, lisFed=0, lisData=null, lisSrcCur=null;
 let recChunks=[], recLen=0, recFull=false;
 const RMASK=32767, fring=new Float32Array(RMASK+1);
 let totalW=0, nextEnd=0, hopS=1323, sring=new Float32Array(88200);
@@ -1075,7 +1090,7 @@ function liveHud(a,b){
 }
 $('bMic').addEventListener('click',()=>{ if(live&&liveKind==='mic') stopMic(); else startMic(); });
 $('bLis').addEventListener('click',()=>{ if(live&&liveKind==='file') stopListen(); else startListen(); });
-$('bFile').addEventListener('click',()=>{ $('fWav').click(); });
+$('bFile').addEventListener('click',()=>{ unlockAudio(); $('fWav').click(); });
 $('fWav').addEventListener('change',async e=>{
   const f=e.target.files[0]; e.target.value=''; if(!f) return;
   try{ await decodeFile(f); startListen(); }
@@ -1086,14 +1101,18 @@ window.addEventListener('pagehide',()=>{ closeStream(); stopListen(); });
 /* ───────── Listen: play the loaded sound through the live waterfall ─────────
    Samples are fed into the same pipeline as the mic, paced by the audio clock
    (minus output latency) so the waterfall lines up with what you hear. */
-function startListen(){
+async function startListen(){
   if(!cur) return;
   if(busy){setHudWarn('wait for the encode to finish');return;}
-  if(live){ if(liveKind==='file') return; stopMic(); }
-  ensureCtx(); stopPlay(true);
+  if(live&&liveKind==='file') return;
+  if(!(await audioReady())){ flash('audio is locked: tap Listen (and check the silent switch)',8000); return; }
+  hudNote='';
+  if(!cur||(live&&liveKind==='file')) return;
+  if(live) await stopMic();
+  stopPlay(true);
   liveKind='file'; liveSR=cur.sr; resetLiveBuffers();
   lisData=cur.data; lisFed=0; lisSrcCur=cur;
-  lisSrc=voice(getBuf()); lisSrc.start(); lisT0=actx.currentTime;
+  lisSrc=voice(getBuf()); lisSrc.start(); lisT0=actx.currentTime; lisWall=performance.now();
   live=true; analyzeId++; busyMsg='';
   reconfigureLive();
   const bl=$('bLis'); bl.textContent='Stop'; bl.classList.add('p');
@@ -1104,6 +1123,7 @@ function startListen(){
 function feedListen(){
   const lat=(actx.outputLatency||0)+(actx.baseLatency||0);
   const el=actx.currentTime-lisT0-lat;
+  if(actx.currentTime-lisT0<.001&&performance.now()-lisWall>1500){ stopListen(); flash('audio clock is not running: tap Listen again (check the silent switch)',8000); return; }
   const tgt=Math.max(0,Math.min(lisData.length,Math.floor(el*liveSR)));
   while(lisFed<tgt){ const e=Math.min(tgt,lisFed+2048); onChunk(lisData.subarray(lisFed,e)); lisFed=e; }
   $('tm').textContent=Math.max(0,Math.min(el,lisSrcCur.dur)).toFixed(1)+' / '+lisSrcCur.dur.toFixed(1)+' s';
@@ -1252,6 +1272,7 @@ function refreshStats(){
     if(spec&&spec.sr===sr&&spec.src===cur){N=spec.N; avgP=avgFromSpec();}
   }else{grid.textContent='';$('peaks').textContent='';return;}
   const dur=live?(liveKind==='file'?lisFed:recLen)/sr:cur.dur;
+  rows.push(['Audio',(actx?actx.state+' · '+actx.sampleRate+' Hz':'not started')]);
   rows.push(['Source',src],[live?(liveKind==='file'?'Played':'Recorded'):'Duration',dur.toFixed(2)+' s'],['Sample rate',sr+' Hz']);
   rows.push(['Peak',dbf(lv.pk,1)+' dBFS'],['RMS',dbf(lv.rms,1)+' dBFS'],
             ['Crest',lv.rms>0?(20*Math.log10(lv.pk/lv.rms)).toFixed(1)+' dB':'—'],
@@ -1282,6 +1303,10 @@ function saveStats(){
   refreshStats(); if(!lastStats) return;
   dl(new Blob([JSON.stringify(lastStats,null,2)],{type:'application/json'}),'spectro_stats.json');
 }
+
+/* ───────── on-screen error reporting (no console on a phone) ───────── */
+window.addEventListener('error',e=>{ try{ flash('JS error: '+(e.message||'?')+' (line '+(e.lineno||'?')+')',15000); }catch(_){ setHudWarn('JS error: '+(e.message||'?')); } });
+window.addEventListener('unhandledrejection',e=>{ const r=e.reason; try{ flash('error: '+(r&&r.message||r),15000); }catch(_){} });
 
 /* ───────── boot ───────── */
 buildUI();
