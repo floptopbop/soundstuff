@@ -30,16 +30,16 @@ header #srcname{margin-left:auto;color:var(--dim);font-size:10px;white-space:now
   text-overflow:ellipsis;color:var(--dim);pointer-events:none}
 #hud .w{color:var(--warn)}
 
-#transport{display:flex;align-items:center;gap:5px;padding:4px 8px;flex:none;
+#transport{display:flex;align-items:center;gap:6px;padding:4px 8px;flex:none;
   border-top:1px solid var(--line);background:var(--panel)}
-#tm{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font:10px ui-monospace,Menlo,monospace;color:var(--dim);white-space:nowrap}
-.b{flex:none;white-space:nowrap;height:26px;padding:0 8px;font:inherit;font-size:11px;color:var(--ink);
+#tm{margin-left:auto;font:10px ui-monospace,Menlo,monospace;color:var(--dim);white-space:nowrap}
+.b{height:26px;padding:0 10px;font:inherit;font-size:11px;color:var(--ink);
   background:var(--panel2);border:1px solid var(--line);border-radius:4px;
   touch-action:manipulation;cursor:pointer}
 .b:active{background:#2a2633}
 .b.p{border-color:#6b5740;color:var(--accent)}
 .b[disabled]{opacity:.45}
-.auto{flex:none;display:flex;align-items:center;gap:4px;color:var(--dim);font-size:10px}
+.auto{display:flex;align-items:center;gap:4px;color:var(--dim);font-size:10px}
 .auto input{margin:0}
 
 #deck{flex:none;max-height:30vh;display:flex;flex-direction:column;
@@ -92,8 +92,6 @@ select{width:100%;height:24px;font:inherit;font-size:11px;color:var(--ink);
     <button class="b p" id="bPlay">Play</button>
     <button class="b" id="bEnc">Encode</button>
     <button class="b" id="bMic">Mic</button>
-    <button class="b" id="bLis">Listen</button>
-    <button class="b" id="bFile">Load WAV</button>
     <label class="auto"><input type="checkbox" id="auto">Auto</label>
     <span id="tm">0.0 / 0.0 s</span>
   </div>
@@ -106,7 +104,6 @@ select{width:100%;height:24px;font:inherit;font-size:11px;color:var(--ink);
 
 <input type="file" id="fImg" accept="image/*" hidden>
 <input type="file" id="fAud" accept="audio/*,video/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,.mov" hidden>
-<input type="file" id="fWav" accept="audio/*,video/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,.mp4,.mov" hidden>
 
 <script>
 (()=>{
@@ -127,9 +124,8 @@ const C=[
  {tab:'tones',k:'dur',t:'Duration',min:2,max:40,step:.5,def:12,cat:'enc',f:v=>(+v).toFixed(1)+' s'},
  {tab:'tones',k:'tones',t:'Tones (image rows)',min:16,max:400,step:1,def:128,cat:'enc'},
  {tab:'tones',k:'cols',t:'Columns (image time steps)',min:16,max:512,step:1,def:256,cat:'enc'},
- {tab:'tones',k:'fLo',t:'Lowest tone',min:50,max:23000,step:10,def:200,cat:'enc',f:v=>v+' Hz'},
- {tab:'tones',k:'fHi',t:'Highest tone',min:200,max:23800,step:10,def:8000,cat:'enc',f:v=>v+' Hz'},
- {tab:'tones',k:'sr',t:'Sample rate',ty:'select',opts:[['44100','44.1 kHz'],['48000','48 kHz']],def:'44100',cat:'enc'},
+ {tab:'tones',k:'fLo',t:'Lowest tone',min:50,max:20800,step:10,def:200,cat:'enc',f:v=>v+' Hz'},
+ {tab:'tones',k:'fHi',t:'Highest tone',min:200,max:30000,step:10,def:8000,cat:'enc',f:v=>v+' Hz'},
  {tab:'tones',k:'fscale',t:'Tone spacing',ty:'select',opts:[['lin','Linear'],['log','Logarithmic']],def:'lin',cat:'enc'},
  {tab:'tones',k:'phase',t:'Tone phase',ty:'select',opts:[['rand','Random'],['zero','Aligned']],def:'rand',cat:'enc'},
  // levels
@@ -146,8 +142,8 @@ const C=[
  {tab:'view',k:'cinv',t:'Reverse colours',ty:'check',def:false,cat:'paint'},
  {tab:'view',k:'vfit',t:'Fit view to tone band',ty:'check',def:true,cat:'paint'},
  {tab:'view',k:'vscale',t:'Frequency axis',ty:'select',opts:[['lin','Linear'],['log','Logarithmic']],def:'lin',cat:'paint'},
- {tab:'view',k:'vLo',t:'View low',min:0,max:23500,step:50,def:0,cat:'paint',f:v=>v+' Hz'},
- {tab:'view',k:'vHi',t:'View high',min:500,max:24000,step:50,def:9000,cat:'paint',f:v=>v+' Hz'},
+ {tab:'view',k:'vLo',t:'View low',min:0,max:20000,step:50,def:0,cat:'paint',f:v=>v+' Hz'},
+ {tab:'view',k:'vHi',t:'View high',min:500,max:22050,step:50,def:9000,cat:'paint',f:v=>v+' Hz'},
  {tab:'view',k:'grid',t:'Grid lines',ty:'check',def:false,cat:'draw'},
  {tab:'view',k:'reveal',t:'Reveal while playing',ty:'check',def:true,cat:'draw'},
  // live mic
@@ -235,20 +231,6 @@ function buildUI(){
   const pv=document.createElement('div'); pv.className='wide';
   pv.innerHTML='<div class="l" style="display:flex;justify-content:space-between;color:var(--dim);font-size:10px;margin-bottom:2px"><span>What gets encoded</span><span>top = high pitch</span></div><canvas id="prev"></canvas>';
   pi.prepend(pv); pi.prepend(row);
-
-  // tones tab: band presets
-  const pt=$('pane_tones');
-  const rp=document.createElement('div'); rp.className='row wide';
-  for(const [lab,k] of [['Audible','aud'],['Faint 15–17k','faint'],['High 17.5–20k','high'],['Edge 19–21.5k','edge']]) rp.append(btn(lab,()=>preset(k)));
-  const tn=document.createElement('div'); tn.className='note wide';
-  tn.textContent='Band presets set the sliders below and encode. Most adults stop hearing around 15–17 kHz; phone speakers and mics usually reach about 20 kHz. Kids and pets can hear more of it.';
-  pt.prepend(tn); pt.prepend(rp);
-
-  // view tab: band finding
-  const pw=$('pane_view');
-  const rv=document.createElement('div'); rv.className='row wide';
-  rv.append(btn('Find high band',()=>findHighBand(false)),btn('Full range',fullRange));
-  pw.prepend(rv);
 
   // file tab
   const pf=$('pane_file');
@@ -363,14 +345,14 @@ function markStale(){
 
 /* ───────── encoder: image → additive sines ───────── */
 function effCfg(){
-  const SR=+P.sr||44100;
+  const SR=44100;
   let fLo=+P.fLo, fHi=+P.fHi;
   fHi=Math.min(fHi,SR/2-200); fLo=Math.min(fLo,fHi-100);
   return {SR,fLo,fHi,R:+P.tones,Cc:+P.cols,dur:+P.dur,fscale:P.fscale};
 }
 async function encode(){
   if(!srcCv) return;
-  if(live){setHudWarn('stop the mic or Listen first');return;}
+  if(live){setHudWarn('stop the mic first');return;}
   if(busy){again=true;return;}
   busy=true; $('bEnc').disabled=true; again=false;
   stopPlay(true);
@@ -409,7 +391,7 @@ async function encode(){
   }
   // fade + normalise
   const nf=Math.min(Math.round(P.fade/1000*SR),N>>1);
-  for(let i=0;i<nf;i++){const m=.5-.5*Math.cos(Math.PI*i/nf);out[i]*=m;out[N-1-i]*=m;}
+  for(let i=0;i<nf;i++){const m=i/nf;out[i]*=m;out[N-1-i]*=m;}
   let pk=0; for(let i=0;i<N;i++){const a=Math.abs(out[i]);if(a>pk)pk=a;}
   const sc=pk>0?(+P.level)/pk:0; for(let i=0;i<N;i++) out[i]*=sc;
   cur={data:out,sr:SR,dur:N/SR,name:'encoded',encoded:true,cfg:{fLo:cfg.fLo,fHi:cfg.fHi,R,Cc,dur:cfg.dur,fscale:cfg.fscale}};
@@ -417,18 +399,6 @@ async function encode(){
   updateTime();
   await analyze();
   if(again){again=false;encode();}
-}
-
-const PRESETS={
-  aud:  {sr:'44100',fLo:200,  fHi:8000, fscale:'lin',tones:128,cols:256,dur:12,fft:'2048',level:.9},
-  faint:{sr:'48000',fLo:15000,fHi:17000,fscale:'lin',tones:80, cols:160,dur:14,fft:'4096',level:.8},
-  high: {sr:'48000',fLo:17500,fHi:20000,fscale:'lin',tones:96, cols:160,dur:14,fft:'4096',level:.8},
-  edge: {sr:'48000',fLo:19000,fHi:21500,fscale:'lin',tones:96, cols:160,dur:14,fft:'4096',level:.8},
-};
-function preset(k){
-  if(live){setHudWarn('stop the mic or Listen first');return;}
-  const p=PRESETS[k]; for(const key in p) setParam(key,p[key]);
-  setParam('vfit',true); updatePreview(); encode();
 }
 
 /* ───────── STFT ───────── */
@@ -478,7 +448,7 @@ async function analyze(){
     }
   }
   for(let i=0;i<db.length;i++) db[i]-=mx;
-  spec={db,frames,bins,N,sr,mx,src:cur}; busyMsg='';
+  spec={db,frames,bins,N,sr,mx}; busyMsg='';
   paintSpec(); draw(); refreshHUD(); refreshStats();
 }
 
@@ -513,7 +483,7 @@ function layout(){
 }
 function viewRange(){
   const nyq=live?liveSR/2:(cur?cur.sr/2:22050); let lo,hi;
-  if((!live||liveKind==='file')&&P.vfit&&cur&&cur.cfg){
+  if(!live&&P.vfit&&cur&&cur.cfg){
     const pad=(cur.cfg.fHi-cur.cfg.fLo)*.05;
     lo=Math.max(0,cur.cfg.fLo-pad); hi=Math.min(nyq,cur.cfg.fHi+pad);
   }else{lo=+P.vLo;hi=+P.vHi;}
@@ -616,15 +586,7 @@ function draw(){
 
 /* ───────── HUD ───────── */
 function setHudWarn(s){ $('hud').innerHTML=''; const w=document.createElement('span'); w.className='w'; w.textContent=s; $('hud').appendChild(w); }
-let hudNote='', hudNoteAt=-1e9, hudNoteMs=4000;
-function flash(msg,ms){ hudNote=msg; hudNoteAt=performance.now(); hudNoteMs=ms||4000; refreshHUD(); }
 function refreshHUD(){
-  refreshHUD0();
-  if(hudNote&&performance.now()-hudNoteAt<hudNoteMs){
-    const w=document.createElement('span'); w.className='w'; w.textContent=' · '+hudNote; $('hud').appendChild(w);
-  }
-}
-function refreshHUD0(){
   const hud=$('hud'); hud.innerHTML='';
   const a=document.createElement('span'), b=document.createElement('span'); b.className='w';
   hud.append(a,b);
@@ -644,7 +606,6 @@ function refreshHUD0(){
     const warn=[];
     if(dfMin<bin*1.4) warn.push('tones blur: raise FFT');
     if(dt<win*.75) warn.push('columns blur: lower FFT');
-    if(!stale&&+P.fHi>c.fHi+1) warn.push('top capped at '+fmtHz(c.fHi)+' Hz');
     if(stale) warn.push('changed: Encode');
     if(warn.length) b.textContent=' · '+warn.join(' · ');
   }else{
@@ -668,55 +629,20 @@ function updateTime(){ $('tm').textContent=(cur?pos.toFixed(1)+' / '+cur.dur.toF
 /* ───────── playback ───────── */
 function ensureCtx(){
   if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
-  if(actx.state!=='running'){ try{ const r=actx.resume(); if(r&&r.catch) r.catch(()=>{}); }catch(e){} }
-}
-// iOS keeps Web Audio locked until a real tap: unlock on the first touches, and
-// play a silent 1-sample buffer (the classic unlock). Also recovers 'interrupted'.
-function unlockAudio(){
-  try{
-    ensureCtx();
-    const b=actx.createBuffer(1,1,22050), s=actx.createBufferSource();
-    s.buffer=b; s.connect(actx.destination); s.start(0);
-  }catch(e){}
-}
-for(const ev of ['pointerdown','touchend','click']) document.addEventListener(ev,()=>{ if(!actx||actx.state!=='running') unlockAudio(); },{passive:true});
-async function audioReady(){
-  ensureCtx();
-  if(actx.state!=='running'){ try{ await Promise.race([actx.resume(),new Promise(r=>setTimeout(r,800))]); }catch(e){} }
-  return actx.state==='running';
+  if(actx.state==='suspended') actx.resume();
 }
 function getBuf(){
   if(cur.buf) return cur.buf;
   if(!cur._ab){const b=actx.createBuffer(1,cur.data.length,cur.sr);b.copyToChannel(cur.data,0);cur._ab=b;}
   return cur._ab;
 }
-// Short raised-cosine gain ramps on every start/stop/seek: a hard cut on a loud
-// high tone is a broadband click you can hear even when the tones themselves are inaudible.
-const RAMP=.02, RAMP_UP=new Float32Array(64), RAMP_DN=new Float32Array(64);
-for(let i=0;i<64;i++){const v=.5-.5*Math.cos(Math.PI*i/63);RAMP_UP[i]=v;RAMP_DN[i]=1-v;}
-function voice(buf){
-  const s=actx.createBufferSource(), gn=actx.createGain(); s.buffer=buf;
-  s.connect(gn); gn.connect(actx.destination);
-  gn.gain.setValueAtTime(0,actx.currentTime);
-  try{gn.gain.setValueCurveAtTime(RAMP_UP,actx.currentTime,RAMP);}catch(e){gn.gain.setValueAtTime(1,actx.currentTime);}
-  s._gn=gn; return s;
-}
-function fadeStop(s){
-  if(!s) return;
-  s.onended=null;
-  const gn=s._gn, t=actx.currentTime;
-  try{ gn.gain.cancelScheduledValues(t); const v=gn.gain.value;
-       const c=RAMP_DN.map(x=>x*v); gn.gain.setValueCurveAtTime(c,t,RAMP); s.stop(t+RAMP+.005); }
-  catch(e){ try{s.stop();}catch(e2){} }
-  setTimeout(()=>{try{s.disconnect();}catch(e){}try{gn.disconnect();}catch(e){}},(RAMP+.15)*1000);
-}
 function stopSource(){
-  if(curSrc){fadeStop(curSrc);curSrc=null;}
+  if(curSrc){curSrc.onended=null;try{curSrc.stop();}catch(e){}try{curSrc.disconnect();}catch(e){}curSrc=null;}
 }
 function startPlay(offset){
   if(!cur) return;
   ensureCtx(); stopSource();
-  const s=voice(getBuf());
+  const s=actx.createBufferSource(); s.buffer=getBuf(); s.connect(actx.destination);
   s.onended=()=>{ if(s===curSrc&&playing){ endPlay(); } };
   curSrc=s; s.start(0,Math.max(0,Math.min(offset,cur.dur-.01)));
   startAt=actx.currentTime-offset; pos=offset; playing=true;
@@ -776,22 +702,20 @@ cv.addEventListener('pointercancel',pend);
 
 /* ───────── file I/O ───────── */
 $('fImg').addEventListener('change',e=>{const f=e.target.files[0];if(f)loadImageFile(f);e.target.value='';});
-async function decodeFile(f){
-  if(live) await stopLive();
-  ensureCtx(); stopPlay(true); busyMsg='decoding…'; refreshHUD();
-  const ab=await f.arrayBuffer();
-  const buf=await new Promise((res,rej)=>{const p=actx.decodeAudioData(ab,res,rej);if(p&&p.then)p.then(res,rej);});
-  const n=buf.length, data=new Float32Array(n), chs=buf.numberOfChannels;
-  for(let c=0;c<chs;c++){const ch=buf.getChannelData(c);for(let i=0;i<n;i++)data[i]+=ch[i]/chs;}
-  cur={data,sr:buf.sampleRate,dur:buf.duration,buf,name:f.name,encoded:false};
-  pos=0; busyMsg=''; $('srcname').textContent=f.name;
-  viewForFile(); updateTime();
-}
-const DECODE_ERR='could not decode that file (try mp3, m4a, wav or a screen recording)';
 $('fAud').addEventListener('change',async e=>{
   const f=e.target.files[0]; e.target.value=''; if(!f) return;
-  try{ await decodeFile(f); await analyze(); }
-  catch(err){busyMsg='';setHudWarn(DECODE_ERR);}
+  try{
+    if(live) await stopMic();
+    ensureCtx(); stopPlay(true); busyMsg='decoding…'; refreshHUD();
+    const ab=await f.arrayBuffer();
+    const buf=await new Promise((res,rej)=>{const p=actx.decodeAudioData(ab,res,rej);if(p&&p.then)p.then(res,rej);});
+    const n=buf.length, data=new Float32Array(n), chs=buf.numberOfChannels;
+    for(let c=0;c<chs;c++){const ch=buf.getChannelData(c);for(let i=0;i<n;i++)data[i]+=ch[i]/chs;}
+    cur={data,sr:buf.sampleRate,dur:buf.duration,buf,name:f.name,encoded:false};
+    pos=0; $('srcname').textContent=f.name;
+    setParam('vfit',false); setParam('vLo',0); setParam('vHi',Math.min(10000,buf.sampleRate/2));
+    updateTime(); await analyze();
+  }catch(err){busyMsg='';setHudWarn('could not decode that file (try mp3, m4a, wav or a screen recording)');}
 });
 function dl(blob,name){
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
@@ -815,7 +739,6 @@ function savePng(){
 
 /* ───────── live mic ───────── */
 let live=false, micBusy=false, liveSR=44100, micStream=null, micSrc=null, micNode=null, micSink=null, workletReady=false;
-let lisWall=0, liveKind='mic', lisSrc=null, lisT0=0, lisFed=0, lisData=null, lisSrcCur=null;
 let recChunks=[], recLen=0, recFull=false;
 const RMASK=32767, fring=new Float32Array(RMASK+1);
 let totalW=0, nextEnd=0, hopS=1323, sring=new Float32Array(88200);
@@ -884,27 +807,23 @@ async function listDevices(){
     if([...sel.options].some(o=>o.value===keep)) sel.value=keep;
   }catch(e){}
 }
-function resetLiveBuffers(){
-  recChunks=[]; recLen=0; recFull=false; totalW=0; fring.fill(0);
-  sring=new Float32Array(Math.round(liveSR*2));
-  lInfo.f=0; lInfo.db=-120; lInfo.cent=0; lInfo.clip=0; lInfo.clipAt=-1e9;
-}
 async function startMic(){
-  if(live&&liveKind==='file') stopListen();
   if(live||micBusy) return;
   if(busy){setHudWarn('wait for the encode to finish');return;}
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){setHudWarn('mic needs https or localhost');return;}
   micBusy=true;
   try{
     ensureCtx(); stopPlay(true);
-    liveSR=actx.sampleRate; liveKind='mic';
-    resetLiveBuffers();
+    liveSR=actx.sampleRate;
+    recChunks=[]; recLen=0; recFull=false; totalW=0; fring.fill(0);
+    sring=new Float32Array(Math.round(liveSR*2));
+    lInfo.f=0; lInfo.db=-120; lInfo.cent=0; lInfo.clip=0; lInfo.clipAt=-1e9;
     await openStream();
     live=true; analyzeId++; busyMsg='';
     setParam('vfit',false);
     reconfigureLive();
     const bm=$('bMic'); bm.textContent='Stop mic'; bm.classList.add('p');
-    $('bPlay').disabled=true; $('bEnc').disabled=true; $('bLis').disabled=true;
+    $('bPlay').disabled=true; $('bEnc').disabled=true;
     $('srcname').textContent='live mic';
     listDevices();
     cancelAnimationFrame(liveRaf); liveRaf=requestAnimationFrame(liveTick);
@@ -918,12 +837,12 @@ async function reacquire(){
   micBusy=false;
 }
 async function stopMic(){
-  if(!live||liveKind!=='mic') return;
+  if(!live) return;
   live=false; cancelAnimationFrame(liveRaf);
   const sr=liveSR, chunks=recChunks, len=recLen;
   closeStream(); recChunks=[];
   const bm=$('bMic'); bm.textContent='Mic'; bm.classList.remove('p');
-  $('bPlay').disabled=false; $('bLis').disabled=false; if(!busy) $('bEnc').disabled=false;
+  $('bPlay').disabled=false; if(!busy) $('bEnc').disabled=false;
   if(len>=0.3*sr){
     const data=new Float32Array(len); let o=0;
     for(const c of chunks){data.set(c,o);o+=c.length;}
@@ -1001,7 +920,7 @@ function paintLiveCol(row){
 function onChunk(buf){
   if(!live) return;
   const n=buf.length, SM=sring.length;
-  if(liveKind==='mic'&&!recFull){ if(recLen+n<=P.lmax*liveSR){recChunks.push(buf);recLen+=n;} else recFull=true; }
+  if(!recFull){ if(recLen+n<=P.lmax*liveSR){recChunks.push(buf);recLen+=n;} else recFull=true; }
   let clip=0;
   for(let i=0;i<n;i++){
     const v=buf[i], a=v<0?-v:v;
@@ -1045,7 +964,6 @@ function liveFrame(e){
 }
 function liveTick(ts){
   if(!live) return;
-  if(liveKind==='file'){ feedListen(); if(!live) return; }
   if(ts-lastDraw>=33){lastDraw=ts;draw();}
   if(ts-lastHud>=120){lastHud=ts;refreshHUD();}
   if(ts-lastStat>=500&&$('pane_stats').classList.contains('on')){lastStat=ts;refreshStats();}
@@ -1079,7 +997,7 @@ function liveHud(a,b){
   const lv=levelsOf(lastSamples(),liveSR), parts=[];
   parts.push(lInfo.f>0&&lInfo.db>-80?noteOf(lInfo.f)+'  '+lInfo.f.toFixed(1)+' Hz  '+lInfo.db.toFixed(0)+' dB':'—');
   parts.push('rms '+dbf(lv.rms)+' pk '+dbf(lv.pk));
-  parts.push(liveKind==='file'?'play '+(lisFed/liveSR).toFixed(1)+'s':'rec '+(recLen/liveSR).toFixed(1)+'s');
+  parts.push('rec '+(recLen/liveSR).toFixed(1)+'s');
   parts.push('ctr '+fmtHz(lInfo.cent));
   a.textContent=parts.join(' · ');
   const w=[];
@@ -1088,120 +1006,8 @@ function liveHud(a,b){
   if(P.lfreeze) w.push('frozen');
   if(w.length) b.textContent=' · '+w.join(' · ');
 }
-$('bMic').addEventListener('click',()=>{ if(live&&liveKind==='mic') stopMic(); else startMic(); });
-$('bLis').addEventListener('click',()=>{ if(live&&liveKind==='file') stopListen(); else startListen(); });
-$('bFile').addEventListener('click',()=>{ unlockAudio(); $('fWav').click(); });
-$('fWav').addEventListener('change',async e=>{
-  const f=e.target.files[0]; e.target.value=''; if(!f) return;
-  try{ await decodeFile(f); startListen(); }
-  catch(err){busyMsg='';setHudWarn(DECODE_ERR);}
-});
-window.addEventListener('pagehide',()=>{ closeStream(); stopListen(); });
-
-/* ───────── Listen: play the loaded sound through the live waterfall ─────────
-   Samples are fed into the same pipeline as the mic, paced by the audio clock
-   (minus output latency) so the waterfall lines up with what you hear. */
-async function startListen(){
-  if(!cur) return;
-  if(busy){setHudWarn('wait for the encode to finish');return;}
-  if(live&&liveKind==='file') return;
-  if(!(await audioReady())){ flash('audio is locked: tap Listen (and check the silent switch)',8000); return; }
-  hudNote='';
-  if(!cur||(live&&liveKind==='file')) return;
-  if(live) await stopMic();
-  stopPlay(true);
-  liveKind='file'; liveSR=cur.sr; resetLiveBuffers();
-  lisData=cur.data; lisFed=0; lisSrcCur=cur;
-  lisSrc=voice(getBuf()); lisSrc.start(); lisT0=actx.currentTime; lisWall=performance.now();
-  live=true; analyzeId++; busyMsg='';
-  reconfigureLive();
-  const bl=$('bLis'); bl.textContent='Stop'; bl.classList.add('p');
-  $('bPlay').disabled=true; $('bEnc').disabled=true;
-  $('srcname').textContent='listening · '+(cur.name||'');
-  cancelAnimationFrame(liveRaf); liveRaf=requestAnimationFrame(liveTick);
-}
-function feedListen(){
-  const lat=(actx.outputLatency||0)+(actx.baseLatency||0);
-  const el=actx.currentTime-lisT0-lat;
-  if(actx.currentTime-lisT0<.001&&performance.now()-lisWall>1500){ stopListen(); flash('audio clock is not running: tap Listen again (check the silent switch)',8000); return; }
-  const tgt=Math.max(0,Math.min(lisData.length,Math.floor(el*liveSR)));
-  while(lisFed<tgt){ const e=Math.min(tgt,lisFed+2048); onChunk(lisData.subarray(lisFed,e)); lisFed=e; }
-  $('tm').textContent=Math.max(0,Math.min(el,lisSrcCur.dur)).toFixed(1)+' / '+lisSrcCur.dur.toFixed(1)+' s';
-  if(el>=lisSrcCur.dur+.05) stopListen();
-}
-function stopListen(){
-  if(!live||liveKind!=='file') return;
-  live=false; cancelAnimationFrame(liveRaf);
-  fadeStop(lisSrc); lisSrc=null; lisData=null; liveKind='mic';
-  const bl=$('bLis'); bl.textContent='Listen'; bl.classList.remove('p');
-  $('bPlay').disabled=false; if(!busy) $('bEnc').disabled=false;
-  $('srcname').textContent=cur?(cur.name||''):'';
-  pos=0; updateTime();
-  if(!spec||spec.src!==cur) analyze();
-  else{ paintSpec(); draw(); refreshHUD(); refreshStats(); }
-}
-async function stopLive(){
-  if(!live) return;
-  if(liveKind==='file') stopListen(); else await stopMic();
-}
-
-/* ───────── high-band finder ─────────
-   Averages ~96 spread-out FFT frames, then looks above 13 kHz for a region that
-   stands well clear of the noise floor there. Auto mode (on file load) also
-   requires that region to be louder than the 4–12 kHz content, so ordinary
-   music with bright cymbals doesn't trigger it. */
-function quickAvg(data,sr){
-  const N=4096, len=data.length, fft=getFFT(N), win=new Float64Array(N);
-  for(let i=0;i<N;i++) win[i]=.5-.5*Math.cos(2*Math.PI*i/N);
-  const re=new Float64Array(N), im=new Float64Array(N), avg=new Float64Array(N/2+1);
-  const F=len>N?Math.min(96,Math.max(1,Math.floor(len/N))):1;
-  for(let f=0;f<F;f++){
-    const st=F>1?Math.round(f*(len-N)/(F-1)):0;
-    for(let i=0;i<N;i++){const k=st+i;re[i]=(k<len?data[k]:0)*win[i];im[i]=0;}
-    fft(re,im);
-    for(let b=0;b<=N/2;b++) avg[b]+=re[b]*re[b]+im[b]*im[b];
-  }
-  return {avg,N};
-}
-function findBand(avg,sr,N,strict){
-  const bins=avg.length, hz=sr/N, b0=Math.ceil(13000/hz), b1=bins-3;
-  if(b1-b0<12) return null;
-  const sm=new Float64Array(bins);
-  for(let b=2;b<bins-2;b++) sm[b]=10*Math.log10((avg[b-2]+avg[b-1]+avg[b]+avg[b+1]+avg[b+2])/5+1e-30);
-  const reg=Array.from(sm.subarray(b0,b1+1)).sort((x,y)=>x-y);
-  const floor=reg[reg.length>>1], m=reg[reg.length-1];
-  if(m-floor<(strict?20:12)) return null;
-  if(strict){
-    const lowA=Math.max(2,Math.floor(4000/hz)), lowB=Math.min(b0-1,Math.floor(12000/hz));
-    if(lowB>lowA){ let mxL=-1e9; for(let b=lowA;b<=lowB;b++) if(sm[b]>mxL) mxL=sm[b]; if(m<mxL+6) return null; }
-  }
-  const thr=floor+.45*(m-floor); let lo=-1, hi=-1;
-  for(let b=b0;b<=b1;b++) if(sm[b]>=thr){ if(lo<0) lo=b; hi=b; }
-  if(lo<0) return null;
-  const fl=lo*hz, fh=hi*hz, pad=Math.max(150,(fh-fl)*.06);
-  return [Math.max(0,fl-pad),Math.min(sr/2,fh+pad)];
-}
-function applyBand(r){
-  const lo=Math.max(0,Math.floor(r[0]/50)*50), hi=Math.max(lo+500,Math.ceil(r[1]/50)*50);
-  setParam('vfit',false); setParam('vLo',lo); setParam('vHi',Math.min(24000,hi));
-  schedulePaint(); if($('pane_stats').classList.contains('on')) refreshStats();
-}
-function findHighBand(strict){
-  let r=null;
-  if(live){ if(lavgP&&lframes) r=findBand(lavgP,liveSR,lN,strict); }
-  else if(cur){ const q=quickAvg(cur.data,cur.sr); r=findBand(q.avg,cur.sr,q.N,strict); }
-  if(!r){ if(!strict) flash('no high band found above 13 kHz'); return false; }
-  applyBand(r); flash('high band '+fmtHz(r[0])+'–'+fmtHz(r[1])+' Hz'); return true;
-}
-function viewForFile(){
-  if(findHighBand(true)) return;
-  setParam('vfit',false); setParam('vLo',0); setParam('vHi',Math.min(10000,cur.sr/2));
-}
-function fullRange(){
-  const nyq=live?liveSR/2:(cur?cur.sr/2:22050);
-  setParam('vfit',false); setParam('vLo',0); setParam('vHi',Math.min(24000,Math.round(nyq/50)*50));
-  schedulePaint();
-}
+$('bMic').addEventListener('click',()=>{ if(live) stopMic(); else startMic(); });
+window.addEventListener('pagehide',()=>{ closeStream(); });
 
 /* ───────── analysis: stats, peaks, average spectrum ───────── */
 function findPeaks(avgP,sr,N,maxN){
@@ -1264,16 +1070,15 @@ function refreshStats(){
   const grid=$('statGrid'); if(!grid) return;
   let rows=[], avgP=null, sr=0, N=0, lv=null, src='';
   if(live){
-    src=liveKind==='file'?'listen · '+(cur&&cur.name||''):'live mic'; sr=liveSR; N=lN; avgP=lavgP;
+    src='live mic'; sr=liveSR; N=lN; avgP=lavgP;
     lv=levelsOf(lastSamples(),sr);
     if(!lframes){grid.textContent='';return;}
   }else if(cur){
     src=cur.name||'audio'; sr=cur.sr; lv=levelsOf(cur.data,sr);
-    if(spec&&spec.sr===sr&&spec.src===cur){N=spec.N; avgP=avgFromSpec();}
+    if(spec&&spec.sr===sr){N=spec.N; avgP=avgFromSpec();}
   }else{grid.textContent='';$('peaks').textContent='';return;}
-  const dur=live?(liveKind==='file'?lisFed:recLen)/sr:cur.dur;
-  rows.push(['Audio',(actx?actx.state+' · '+actx.sampleRate+' Hz':'not started')]);
-  rows.push(['Source',src],[live?(liveKind==='file'?'Played':'Recorded'):'Duration',dur.toFixed(2)+' s'],['Sample rate',sr+' Hz']);
+  const dur=live?recLen/sr:cur.dur;
+  rows.push(['Source',src],[live?'Recorded':'Duration',dur.toFixed(2)+' s'],['Sample rate',sr+' Hz']);
   rows.push(['Peak',dbf(lv.pk,1)+' dBFS'],['RMS',dbf(lv.rms,1)+' dBFS'],
             ['Crest',lv.rms>0?(20*Math.log10(lv.pk/lv.rms)).toFixed(1)+' dB':'—'],
             ['DC offset',lv.dc.toFixed(4)],['Clipped',String(live?lInfo.clip:lv.clip)],
@@ -1303,10 +1108,6 @@ function saveStats(){
   refreshStats(); if(!lastStats) return;
   dl(new Blob([JSON.stringify(lastStats,null,2)],{type:'application/json'}),'spectro_stats.json');
 }
-
-/* ───────── on-screen error reporting (no console on a phone) ───────── */
-window.addEventListener('error',e=>{ try{ flash('JS error: '+(e.message||'?')+' (line '+(e.lineno||'?')+')',15000); }catch(_){ setHudWarn('JS error: '+(e.message||'?')); } });
-window.addEventListener('unhandledrejection',e=>{ const r=e.reason; try{ flash('error: '+(r&&r.message||r),15000); }catch(_){} });
 
 /* ───────── boot ───────── */
 buildUI();
