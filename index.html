@@ -673,7 +673,6 @@ function updateTime(){ $('tm').textContent=(cur?pos.toFixed(1)+' / '+cur.dur.toF
 /* ───────── playback ───────── */
 function ensureCtx(){
   if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
-  try{ if(navigator.audioSession&&!live) navigator.audioSession.type='playback'; }catch(e){}   // play even with the silent switch on
   if(actx.state==='suspended') actx.resume();
 }
 function getBuf(){
@@ -864,7 +863,6 @@ async function startMic(){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){setHudWarn('mic needs https or localhost');return;}
   micBusy=true;
   try{
-    try{ if(navigator.audioSession) navigator.audioSession.type='play-and-record'; }catch(e){}
     ensureCtx(); stopPlay(true);
     liveSR=actx.sampleRate;
     recChunks=[]; recLen=0; recFull=false; totalW=0; fring.fill(0);
@@ -893,7 +891,6 @@ async function stopMic(){
   live=false; cancelAnimationFrame(liveRaf);
   const sr=liveSR, chunks=recChunks, len=recLen;
   closeStream(); recChunks=[];
-  try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(e){}
   const bm=$('bMic'); bm.textContent='Mic'; bm.classList.remove('p');
   $('bPlay').disabled=false; if(!busy) $('bEnc').disabled=false;
   if(len>=0.3*sr){
