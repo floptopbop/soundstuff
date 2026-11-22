@@ -166,7 +166,7 @@ const C=[
  {tab:'mic',k:'lceil',t:'Top level',min:-90,max:0,step:1,def:-20,cat:'paint',f:v=>v+' dBFS'},
  {tab:'mic',k:'lsmooth',t:'Smoothing',min:0,max:.9,step:.05,def:0,cat:'draw',f:v=>(+v).toFixed(2)},
  {tab:'mic',k:'lmax',t:'Max recording',min:10,max:600,step:10,def:120,cat:'draw',f:v=>v+' s'},
- {tab:'mic',k:'lraw',t:'Raw input (no auto-gain, no noise cut)',ty:'check',def:true,cat:'live'},
+ {tab:'mic',k:'lmode',t:'Mic mode',ty:'select',opts:[['default','Browser default (best high band on your phone)'],['raw','Raw (all processing off)'],['proc','Voice processing on']],def:'default',cat:'live'},
  {tab:'mic',k:'lfreeze',t:'Freeze display',ty:'check',def:false,cat:'draw'},
 ];
 const P={}, reg={};
@@ -834,9 +834,11 @@ async function attachCapture(){
   micSrc.connect(sp); sp.connect(micSink); micNode=sp;
 }
 async function openStream(){
-  const a={echoCancellation:!P.lraw,noiseSuppression:!P.lraw,autoGainControl:!P.lraw};
+  // HEAR_TEST on NC's iPhone: browser default reached 21 kHz, raw ~19 kHz, voice processing ~17 kHz
+  const a=P.lmode==='raw'?{echoCancellation:false,noiseSuppression:false,autoGainControl:false}
+        :P.lmode==='proc'?{echoCancellation:true,noiseSuppression:true,autoGainControl:true}:{};
   const d=$('mdev').value; if(d) a.deviceId={exact:d};
-  micStream=await navigator.mediaDevices.getUserMedia({audio:a});
+  micStream=await navigator.mediaDevices.getUserMedia({audio:Object.keys(a).length?a:true});
   micSrc=actx.createMediaStreamSource(micStream);
   await attachCapture();
 }
@@ -906,7 +908,7 @@ async function stopMic(){
 }
 function liveParamChanged(k){
   if(!live) return;
-  if(k==='lraw') reacquire(); else reconfigureLive();
+  if(k==='lmode') reacquire(); else reconfigureLive();
 }
 function reconfigureLive(){
   lN=+P.fft; lbins=lN/2+1;
